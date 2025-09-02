@@ -246,7 +246,7 @@ export default function FileCard({
               onMouseLeave={() => setActiveTooltip(null)}
             >
               <a 
-                href={`/api/docs/download/${file._id}`}
+                href={`https://clouddoc-manager.onrender.com/api/docs/download/${file._id}`}
                 download={file.filename}
                 className="action-btn download-btn"
               >
