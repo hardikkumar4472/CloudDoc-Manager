@@ -69,7 +69,7 @@ export default function RegisterPage() {
   const handleRegister = async () => {
     setLoading(true);
     try {
-      await axios.post("/api/auth/register", form);
+      await axios.post("https://clouddoc-manager.onrender.com/api/auth/register", form);
       setStep("otp");
     } catch (error) {
       alert("Registration failed. Please try again.");
@@ -81,7 +81,7 @@ export default function RegisterPage() {
   const handleVerify = async () => {
     setLoading(true);
     try {
-      await axios.post("/api/auth/verify-register-otp", {
+      await axios.post("https://clouddoc-manager.onrender.com/api/auth/verify-register-otp", {
         email: form.email,
         otp
       });
