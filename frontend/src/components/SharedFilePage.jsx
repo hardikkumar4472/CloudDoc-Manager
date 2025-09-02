@@ -13,7 +13,7 @@ export default function SharedFilePage() {
     const accessSharedFile = async () => {
       try {
         const response = await axios.get(
-          `/api/docs/share/access/${token}`
+          `https://clouddoc-manager.onrender.com/api/docs/share/access/${token}`
         );
         setFile(response.data.document);
       } catch (err) {
