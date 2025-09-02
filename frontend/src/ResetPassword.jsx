@@ -15,7 +15,7 @@ export default function ResetPassword() {
     setLoading(true);
     setMessage("");
     try {
-      const res = await axios.post("/api/auth/request-reset", {
+      const res = await axios.post("https://clouddoc-manager.onrender.com/api/auth/request-reset", {
         email,
       });
       setMessage(res.data.msg);
