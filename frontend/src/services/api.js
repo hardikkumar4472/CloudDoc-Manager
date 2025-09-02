@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api/docs';
+const API_BASE_URL = 'https://clouddoc-manager.onrender.com/api/docs';
 axios.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
