@@ -69,7 +69,14 @@ export default function RegisterPage() {
   const handleRegister = async () => {
     setLoading(true);
     try {
-      await axios.post("https://clouddoc-manager.onrender.com/api/auth/register", form);
+      await axios.post(
+  "https://clouddoc-manager.onrender.com/api/auth/register",
+  form,
+  {
+    headers: { "Content-Type": "application/json" }
+  }
+);
+
       setStep("otp");
     } catch (error) {
       alert("Registration failed. Please try again.");
