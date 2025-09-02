@@ -46,7 +46,7 @@ export default function DashboardPage() {
 
   const fetchFiles = async () => {
     try {
-      const res = await axios.get("/api/docs", {
+      const res = await axios.get("https://clouddoc-manager.onrender.com/api/docs", {
         headers: { Authorization: `Bearer ${token}` }
       });
       const sortedFiles = res.data.sort((a, b) => {
@@ -62,7 +62,7 @@ export default function DashboardPage() {
 
   const fetchUserProfile = async () => {
     try {
-      const res = await axios.get("/api/auth/profile", {
+      const res = await axios.get("https://clouddoc-manager.onrender.com/api/auth/profile", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(res.data);
@@ -79,7 +79,7 @@ export default function DashboardPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      await axios.post("/api/docs/upload", formData, {
+      await axios.post("https://clouddoc-manager.onrender.com/api/docs/upload", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -103,7 +103,7 @@ export default function DashboardPage() {
       const formData = new FormData();
       formData.append("file", versionFile);
 
-      await axios.post(`/api/docs/${selectedFile._id}/version`, formData, {
+      await axios.post(`https://clouddoc-manager.onrender.com/api/docs/${selectedFile._id}/version`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -123,7 +123,7 @@ export default function DashboardPage() {
   const handleShareFile = async (fileId, expiresIn) => {
     try {
       const response = await axios.post(
-        `http://localhost:5000/api/docs/share/${fileId}`,
+        `https://clouddoc-manager.onrender.com/api/docs/share/${fileId}`,
         { expiresIn },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -137,7 +137,7 @@ export default function DashboardPage() {
   const handleRevokeShare = async (fileId) => {
     try {
       await axios.post(
-        `/api/docs/share/revoke/${fileId}`,
+        `https://clouddoc-manager.onrender.com/api/docs/share/revoke/${fileId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -151,7 +151,7 @@ export default function DashboardPage() {
   const handleSendEmail = async (fileId, emailData) => {
     try {
       const response = await axios.post(
-        `/api/docs/${fileId}/send-email`,
+        `https://clouddoc-manager.onrender.com/api/docs/${fileId}/send-email`,
         emailData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -166,7 +166,7 @@ export default function DashboardPage() {
   const handleCompressPDF = async (fileId, level) => {
     try {
       const response = await axios.get(
-        `/api/docs/compress/${fileId}?level=${level}`,
+        `https://clouddoc-manager.onrender.com/api/docs/compress/${fileId}?level=${level}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -191,7 +191,7 @@ export default function DashboardPage() {
   const handleDelete = async (id) => {
     setDeletingId(id);
     try {
-      await axios.delete(`/api/docs/${id}`, {
+      await axios.delete(`https://clouddoc-manager.onrender.com/api/docs/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
@@ -205,7 +205,7 @@ export default function DashboardPage() {
   const handleToggleFavorite = async (id) => {
     setTogglingId(id);
     try {
-      await axios.patch(`/api/docs/${id}/favorite`, {}, {
+      await axios.patch(`https://clouddoc-manager.onrender.com/api/docs/${id}/favorite`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
@@ -219,7 +219,7 @@ export default function DashboardPage() {
   const handleTogglePin = async (id) => {
     setTogglingId(id);
     try {
-      await axios.patch(`/api/docs/${id}/pin`, {}, {
+      await axios.patch(`https://clouddoc-manager.onrender.com/api/docs/${id}/pin`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
@@ -232,7 +232,7 @@ export default function DashboardPage() {
 
   const handleRestoreVersion = async (fileId, versionNumber) => {
     try {
-      await axios.post(`/api/docs/${fileId}/restore/${versionNumber}`, {}, {
+      await axios.post(`https://clouddoc-manager.onrender.com/api/docs/${fileId}/restore/${versionNumber}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowVersions(false);
@@ -245,7 +245,7 @@ export default function DashboardPage() {
 
   const handleRename = async (id, newName) => {
     try {
-      await axios.put(`/api/docs/rename/${id}`, 
+      await axios.put(`https://clouddoc-manager.onrender.com/api/docs/rename/${id}`, 
         { newName },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -266,7 +266,7 @@ export default function DashboardPage() {
       if (quality) params.append('quality', quality);
       
       const response = await axios.get(
-        `/api/docs/download/${fileId}/resize?${params.toString()}`,
+        `https://clouddoc-manager.onrender.com/api/docs/download/${fileId}/resize?${params.toString()}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -295,7 +295,7 @@ export default function DashboardPage() {
     }
     
     try {
-      const res = await axios.get(`/api/docs/search?query=${encodeURIComponent(query)}`, {
+      const res = await axios.get(`https://clouddoc-manager.onrender.com/api/docs/search?query=${encodeURIComponent(query)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFiles(res.data);
