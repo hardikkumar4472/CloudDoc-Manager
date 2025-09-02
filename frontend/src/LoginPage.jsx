@@ -70,7 +70,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
     try {
-      await axios.post("/api/auth/login", form);
+      await axios.post("https://clouddoc-manager.onrender.com/api/auth/login", form);
       setStep("otp");
       setMessage("OTP sent to your email");
     } catch (error) {
@@ -84,7 +84,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
     try {
-      const res = await axios.post("/api/auth/verify-login-otp", {
+      const res = await axios.post("https://clouddoc-manager.onrender.com/api/auth/verify-login-otp", {
         email: form.email,
         otp
       });
