@@ -28,6 +28,7 @@ export default function App() {
         />
         <Route path="/share/:token" element={<SharedFilePage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
   );
