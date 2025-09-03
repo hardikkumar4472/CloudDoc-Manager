@@ -126,7 +126,7 @@ export default function RegisterPage() {
             <i className="fas fa-cloud-upload-alt"></i>
           </div>
           <h2>Create Your Account</h2>
-          <p>{step === "register" ? "Join CloudDocSaver today" : "Verify your email address"}</p>
+          <p>{step === "register" ? "Join CloudDocManager today" : "Verify your email address"}</p>
         </div>
         
         {step === "register" ? (
