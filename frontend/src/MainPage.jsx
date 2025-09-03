@@ -71,7 +71,7 @@ export default function MainPage() {
           <div className="logo-icon">
             <i className="fas fa-cloud-upload-alt"></i>
           </div>
-          <h1>CloudDoc<span>Saver</span></h1>
+          <h1>CloudDoc<span>Manager</span></h1>
         </div>
         
         <div className="hero-section">
