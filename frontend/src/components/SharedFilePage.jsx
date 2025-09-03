@@ -73,7 +73,6 @@ export default function SharedFilePage() {
           </div>
 
           <div className="file-actions">
-            
             <a href={file.url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
               <i className="fas fa-eye"></i>
               View File
