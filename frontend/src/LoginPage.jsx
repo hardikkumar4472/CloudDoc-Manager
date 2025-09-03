@@ -191,7 +191,7 @@ export default function LoginPage() {
             <div className="logo-icon">
               <i className="fas fa-cloud-upload-alt"></i>
             </div>
-            <h1>CloudDoc<span>Saver</span></h1>
+            <h1>CloudDoc<span>Manager</span></h1>
           </div>
           
           <h2>{step === "login" ? "Welcome Back" : "Verify Your Identity"}</h2>
