@@ -4,6 +4,7 @@ import LoginPage from "./LoginPage";
 import RegisterPage from "./RegisterPage";
 import DashboardPage from "./DashboardPage";
 import SharedFilePage from "./components/SharedFilePage";
+import ResetPassword from "./ResetPassword";
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem("token");
@@ -26,6 +27,7 @@ export default function App() {
           }
         />
         <Route path="/share/:token" element={<SharedFilePage />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
