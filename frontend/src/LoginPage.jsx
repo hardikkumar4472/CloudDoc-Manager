@@ -8,6 +8,11 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [resetStep, setResetStep] = useState(1);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetOtp, setResetOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showResetModal, setShowResetModal] = useState(false);
   const navigate = useNavigate();
 
   // Background particle effect
@@ -108,6 +113,67 @@ export default function LoginPage() {
     }
   };
 
+  // Reset Password Functions
+  const handleRequestOtp = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage("");
+    try {
+      const res = await axios.post("https://clouddoc-manager.onrender.com/api/auth/request-reset", {
+        email: resetEmail,
+      });
+      setMessage(res.data.msg);
+      setResetStep(2);
+    } catch (err) {
+      setMessage(err.response?.data?.msg || "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage("");
+    try {
+      const res = await axios.post("https://clouddoc-manager.onrender.com/api/auth/reset-password", {
+        email: resetEmail,
+        otp: resetOtp,
+        newPassword,
+      });
+      setMessage(res.data.msg);
+      setTimeout(() => {
+        setShowResetModal(false);
+        setResetStep(1);
+        setResetEmail("");
+        setResetOtp("");
+        setNewPassword("");
+      }, 2000);
+    } catch (err) {
+      setMessage(err.response?.data?.msg || "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openResetModal = () => {
+    setShowResetModal(true);
+    setResetStep(1);
+    setResetEmail("");
+    setResetOtp("");
+    setNewPassword("");
+    setMessage("");
+  };
+
+  const closeResetModal = () => {
+    setShowResetModal(false);
+    setResetStep(1);
+    setResetEmail("");
+    setResetOtp("");
+    setNewPassword("");
+    setMessage("");
+  };
+
   return (
     <div className="login-container">
       {/* Background elements */}
@@ -136,8 +202,8 @@ export default function LoginPage() {
           </p>
           
           {message && (
-            <div className={`message ${message.includes("failed") ? "error" : "success"}`}>
-              <i className={`fas ${message.includes("failed") ? "fa-exclamation-circle" : "fa-check-circle"}`}></i>
+            <div className={`message ${message.includes("failed") || message.includes("wrong") ? "error" : "success"}`}>
+              <i className={`fas ${message.includes("failed") || message.includes("wrong") ? "fa-exclamation-circle" : "fa-check-circle"}`}></i>
               {message}
             </div>
           )}
@@ -178,7 +244,7 @@ export default function LoginPage() {
               </button>
               
               <div className="auth-links">
-                <a href="/reset-password" className="forgot-link">Forgot password?</a>
+                <a href="#" onClick={openResetModal} className="forgot-link">Forgot password?</a>
                 <p>Don't have an account? <Link to="/register" className="auth-link">Sign up</Link></p>
               </div>
             </div>
@@ -227,6 +293,106 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Reset Password Modal */}
+      {showResetModal && (
+        <div className="modal-overlay">
+          <div className="reset-modal">
+            <div className="modal-header">
+              <h2>Reset Password</h2>
+              <button className="modal-close" onClick={closeResetModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <p className="reset-subtitle">
+                {resetStep === 1
+                  ? "Enter your email to receive an OTP"
+                  : "Enter the OTP sent to your email and set a new password"}
+              </p>
+              
+              {resetStep === 1 ? (
+                <form onSubmit={handleRequestOtp} className="reset-form">
+                  <div className="input-group">
+                    <i className="fas fa-envelope input-icon"></i>
+                    <input
+                      type="email"
+                      placeholder="Enter your email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                      className="auth-input"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="auth-button reset-btn"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i>
+                        Sending OTP...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-paper-plane"></i>
+                        Send OTP
+                      </>
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleResetPassword} className="reset-form">
+                  <div className="input-group">
+                    <i className="fas fa-key input-icon"></i>
+                    <input
+                      type="text"
+                      placeholder="Enter OTP code"
+                      value={resetOtp}
+                      onChange={(e) => setResetOtp(e.target.value)}
+                      required
+                      className="auth-input"
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <i className="fas fa-lock input-icon"></i>
+                    <input
+                      type="password"
+                      placeholder="New Password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      className="auth-input"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="auth-button reset-btn"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i>
+                        Resetting...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-sync-alt"></i>
+                        Reset Password
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -483,6 +649,7 @@ export default function LoginPage() {
           display: block;
           margin-bottom: 10px;
           transition: all 0.3s ease;
+          cursor: pointer;
         }
         
         .forgot-link:hover {
@@ -578,6 +745,86 @@ export default function LoginPage() {
           color: rgba(255, 255, 255, 0.6);
         }
         
+        /* Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(5px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+        
+        .reset-modal {
+          background: rgba(15, 23, 42, 0.95);
+          backdrop-filter: blur(20px);
+          border-radius: 20px;
+          padding: 30px;
+          width: 100%;
+          max-width: 450px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+          animation: modalSlideIn 0.3s ease;
+        }
+        
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+          color: #4fc3f7;
+          font-weight: 600;
+          font-size: 24px;
+        }
+        
+        .modal-close {
+          background: transparent;
+          border: none;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 20px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+          color: #4fc3f7;
+          transform: rotate(90deg);
+        }
+        
+        .reset-subtitle {
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 14px;
+          margin-bottom: 20px;
+          text-align: center;
+        }
+        
+        .reset-form {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+        }
+        
+        .reset-btn {
+          background: linear-gradient(45deg, #4fc3f7, #6ab0e6);
+          color: white;
+          font-weight: 600;
+          box-shadow: 0 4px 15px rgba(79, 195, 247, 0.3);
+        }
+        
+        .reset-btn:not(:disabled):hover {
+          box-shadow: 0 8px 25px rgba(79, 195, 247, 0.4);
+          background: linear-gradient(45deg, #6ab0e6, #4fc3f7);
+        }
+        
         @keyframes fadeInUp {
           from {
             opacity: 0;
@@ -595,6 +842,17 @@ export default function LoginPage() {
           }
           to {
             opacity: 1;
+          }
+        }
+        
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
           }
         }
         
@@ -620,6 +878,10 @@ export default function LoginPage() {
           .resend-btn {
             justify-content: center;
           }
+          
+          .reset-modal {
+            padding: 25px 20px;
+          }
         }
         
         @media (max-width: 480px) {
@@ -634,6 +896,10 @@ export default function LoginPage() {
           .security-badge {
             flex-direction: column;
             text-align: center;
+          }
+          
+          .modal-header h2 {
+            font-size: 20px;
           }
         }
       `}</style>
