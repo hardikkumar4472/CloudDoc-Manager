@@ -67,23 +67,31 @@ export default function RegisterPage() {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleRegister = async () => {
-    setLoading(true);
-    try {
-      await axios.post(
-  "https://clouddoc-manager.onrender.com/api/auth/register",
-  form,
-  {
-    headers: { "Content-Type": "application/json" }
-  }
-);
-
+  setLoading(true);
+  try {
+    const response = await axios.post(
+      "https://clouddoc-manager.onrender.com/api/auth/register",
+      form,
+      {
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+    
+    if (response.data.success) {
       setStep("otp");
-    } catch (error) {
-      alert("Registration failed. Please try again.");
-      console.error(error);
+    } else {
+      alert(response.data.message || "Registration failed");
     }
-    setLoading(false);
-  };
+  } catch (error) {
+    if (error.response && error.response.data) {
+      alert(error.response.data.message || "Registration failed");
+    } else {
+      alert("Network error. Please try again.");
+    }
+    console.error("Registration error:", error);
+  }
+  setLoading(false);
+};
 
   const handleVerify = async () => {
     setLoading(true);
