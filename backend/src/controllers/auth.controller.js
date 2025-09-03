@@ -18,28 +18,76 @@ export const getProfile = async (req, res) => {
 export const register = async (req, res) => {
   try {
     const { name, phone, email, password } = req.body;
-
+    if (!name || !phone || !email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        msg: "All fields are required" 
+      });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false,
+        msg: "Please provide a valid email address" 
+      });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        success: false,
+        msg: "Password must be at least 6 characters long" 
+      });
+    }
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ msg: "User already exists" });
-
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false,
+        msg: "User already exists with this email" 
+      });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
     const user = new User({
       name,
       phone,
       email,
       password: hashedPassword,
       otp,
-      otpExpires: Date.now() + 5 * 60 * 1000,
+      otpExpires: Date.now() + 5 * 60 * 1000, // 5 minutes
     });
 
     await user.save();
     await sendOTP(user.email, otp);
+    res.status(201).json({ 
+      success: true,
+      msg: "User registered successfully. OTP sent to email.",
+      data: {
+        email: user.email 
+      }
+    });
 
-    res.json({ msg: "User registered. OTP sent to email." });
   } catch (err) {
-    res.status(500).json({ msg: "Error registering user", error: err.message });
+    console.error("Registration error:", err);
+
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ 
+        success: false,
+        msg: "Validation error",
+        error: err.message 
+      });
+    }
+    
+    if (err.code === 11000) { 
+      return res.status(400).json({ 
+        success: false,
+        msg: "User already exists" 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      msg: "Error registering user",
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    });
   }
 };
 
