@@ -4,7 +4,7 @@ export default function Header({ user, handleLogout }) {
       <div className="header-content">
         <div className="brand">
           <i className="fas fa-cloud-upload-alt"></i>
-          <h1>CloudDoc<span>Saver</span></h1>
+          <h1>CloudDoc<span>Manager</span></h1>
         </div>
         
         <div className="user-menu">
