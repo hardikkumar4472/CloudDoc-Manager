@@ -3,7 +3,7 @@ import MainPage from "./MainPage";
 import LoginPage from "./LoginPage";
 import RegisterPage from "./RegisterPage";
 import DashboardPage from "./DashboardPage";
-// import SharedFilePage from "./components/SharedFilePage";
+import SharedFilePage from "./components/SharedFilePage";
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem("token");
@@ -25,7 +25,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
-{/*         <Route path="/share/:token" element={<SharedFilePage />} /> */}
+        <Route path="/share/:token" element={<SharedFilePage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
