@@ -145,11 +145,11 @@ export const sendOTP = async (email, otp) => {
   <body>
       <div class="email-container">
           <div class="email-header">
-              <h1>CloudDocSaver Verification</h1>
+              <h1>CloudDocManager Verification</h1>
           </div>
           <div class="email-body">
               <p class="message">Hello,</p>
-              <p class="message">You requested a one-time password for your CloudDocSaver account. Use the following verification code to complete your action:</p>
+              <p class="message">You requested a one-time password for your CloudDocManager account. Use the following verification code to complete your action:</p>
               
               <div class="otp-container">
                   <div class="otp-code">${otp}</div>
@@ -164,7 +164,7 @@ export const sendOTP = async (email, otp) => {
               <p class="message">Need help? Contact our support team at <a href="mailto:civicconnectpvt@gmail.com" class="support-link">civicconnectpvt@gmail.com</a></p>
           </div>
           <div class="footer">
-              <p>&copy; ${new Date().getFullYear()} CloudDocSaver. All rights reserved.</p>
+              <p>&copy; ${new Date().getFullYear()} CloudDocManager. All rights reserved.</p>
           </div>
       </div>
   </body>
@@ -172,9 +172,9 @@ export const sendOTP = async (email, otp) => {
   `;
 
   const textContent = `
-  CloudDocSaver Verification
+  CloudDocManager Verification
   
-  You requested a one-time password for your CloudDocSaver account.
+  You requested a one-time password for your CloudDocManager account.
   
   Your OTP code is: ${otp}
   
@@ -188,7 +188,7 @@ export const sendOTP = async (email, otp) => {
   await transporter.sendMail({
     from: process.env.FROM_EMAIL,
     to: email,
-    subject: "Your CloudDocSaver Verification Code",
+    subject: "Your CloudDocManager Verification Code",
     text: textContent,
     html: htmlContent
   });
