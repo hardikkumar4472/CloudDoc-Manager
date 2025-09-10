@@ -79,7 +79,7 @@ export default function LoginPage() {
       setStep("otp");
       setMessage("OTP sent to your email");
     } catch (error) {
-      setMessage(error.response?.data?.message || "Login failed");
+      setMessage(error.response?.data?.message || "Verification failed");
     } finally {
       setIsLoading(false);
     }
