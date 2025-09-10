@@ -17,7 +17,7 @@ export default function SharedFilePage() {
         );
         setFile(response.data.document);
       } catch (err) {
-        setError(err.response?.data?.message || "Invalid or expired link");
+        setError(err.response?.data?.message || "Share link revoked, Generate it again");
       } finally {
         setLoading(false);
       }
