@@ -81,7 +81,7 @@ export default function SharedFilePage() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         * {
           margin: 0;
           padding: 0;
