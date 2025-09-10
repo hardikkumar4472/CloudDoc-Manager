@@ -106,7 +106,7 @@ export const verifyRegisterOTP = async (req, res) => {
     user.otpExpires = null;
     await user.save();
 
-    res.json({ msg: "✅ Email verified successfully. You can now login." });
+    res.json({ msg: "Email verified successfully. You can now login." });
   } catch (err) {
     res.status(500).json({ msg: "Error verifying OTP", error: err.message });
   }
@@ -119,7 +119,6 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ msg: "Invalid credentials" });
     if (!user.isVerified) return res.status(400).json({ msg: "Please verify your email first." });
-
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -127,7 +126,6 @@ export const login = async (req, res) => {
     user.otpExpires = Date.now() + 5 * 60 * 1000;
     await user.save();
     await sendOTP(user.email, otp);
-
     res.json({ msg: "OTP sent to email for login" });
   } catch (err) {
     res.status(500).json({ msg: "Error logging in", error: err.message });
@@ -169,10 +167,7 @@ export const resetPassword = async (req, res) => {
     ) {
       return res.status(400).json({ msg: "Invalid or expired OTP" });
     }
-
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     user.password = hashedPassword;
     user.otp = null;
     user.otpExpires = null;
