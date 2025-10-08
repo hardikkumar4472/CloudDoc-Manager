@@ -199,6 +199,9 @@ import dotenv from "dotenv";
 import { Resend } from "resend";
 
 dotenv.config();
+console.log("RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY);
+console.log("FROM_EMAIL:", process.env.FROM_EMAIL);
+
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
