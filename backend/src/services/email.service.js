@@ -200,10 +200,9 @@ import { Resend } from "resend";
 
 dotenv.config();
 
-// Initialize Resend with your API key
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const resendOTP = async (email, otp) => {
+export const sendOTP = async (email, otp) => {
   const htmlContent = `
   <!DOCTYPE html>
   <html lang="en">
