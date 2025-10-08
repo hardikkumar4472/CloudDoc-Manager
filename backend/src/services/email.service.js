@@ -349,17 +349,19 @@ export const sendOTP = async (email, otp) => {
   `;
 
   try {
-    const response = await resend.emails.send({
-      from: process.env.FROM_EMAIL,
-      to: email,
-      subject: "Your CloudDocManager Verification Code",
-      html: htmlContent,
-      text: textContent,
-    });
+  const response = await resend.emails.send({
+    from: process.env.FROM_EMAIL,
+    to: email,
+    subject: "Your CloudDocManager Verification Code",
+    html: htmlContent,
+    text: textContent,
+  });
 
-    return { success: true, message: "OTP resent successfully", response };
-  } catch (error) {
-    console.error("Resend OTP Error:", error);
-    throw new Error("Failed to send OTP email");
-  }
+  console.log("📤 Resend response:", response);
+  return { success: true, message: "OTP resent successfully", response };
+} catch (error) {
+  console.error("❌ Resend OTP Error:", error);
+  throw new Error("Failed to send OTP email");
+}
+
 };
