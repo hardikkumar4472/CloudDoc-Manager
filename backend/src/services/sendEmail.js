@@ -1,12 +1,15 @@
-// sendMail.js
 import dotenv from "dotenv";
 import fs from "fs";
-import Brevo from "@brevo/node";
+import brevo from "@getbrevo/brevo-api";
 
 dotenv.config();
 
-const brevo = new Brevo.TransactionalEmailsApi();
-brevo.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
+// Initialize Brevo API client
+const defaultClient = brevo.ApiClient.instance;
+const apiKey = defaultClient.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
+const apiInstance = new brevo.TransactionalEmailsApi();
 
 export const sendMail = async ({ to, subject, text, attachments }) => {
   try {
@@ -40,21 +43,20 @@ export const sendMail = async ({ to, subject, text, attachments }) => {
       </div>
     `;
 
-    const emailData = {
-      sender: {
-        name: "CloudDoc Saver",
-        email: process.env.FROM_EMAIL,
-      },
-      to: Array.isArray(to)
-        ? to.map((email) => ({ email }))
-        : [{ email: to }],
-      subject,
-      htmlContent,
-      textContent: text,
-      attachment: formattedAttachments,
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = {
+      name: "CloudDoc Saver",
+      email: process.env.FROM_EMAIL,
     };
+    sendSmtpEmail.to = Array.isArray(to)
+      ? to.map((email) => ({ email }))
+      : [{ email: to }];
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = htmlContent;
+    sendSmtpEmail.textContent = text;
+    sendSmtpEmail.attachment = formattedAttachments;
 
-    const response = await brevo.sendTransacEmail(emailData);
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
     console.log("✅ Brevo email sent:", response);
     return { success: true, response };
