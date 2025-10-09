@@ -1,9 +1,8 @@
 import dotenv from "dotenv";
-import brevo from "@getbrevo/brevo-api";
+import brevo from 'sib-api-v3-sdk';
 
 dotenv.config();
 
-// Initialize Brevo API client
 const defaultClient = brevo.ApiClient.instance;
 const apiKey = defaultClient.authentications['api-key'];
 apiKey.apiKey = process.env.BREVO_API_KEY;
