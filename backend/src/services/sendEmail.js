@@ -1,11 +1,11 @@
 import dotenv from "dotenv";
 import fs from "fs";
-import brevo from 'sib-api-v3-sdk';
+import brevo from "sib-api-v3-sdk";
 
 dotenv.config();
 
 const defaultClient = brevo.ApiClient.instance;
-const apiKey = defaultClient.authentications['api-key'];
+const apiKey = defaultClient.authentications["api-key"];
 apiKey.apiKey = process.env.BREVO_API_KEY;
 
 const apiInstance = new brevo.TransactionalEmailsApi();
@@ -45,7 +45,7 @@ export const sendMail = async ({ to, subject, text, attachments }) => {
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.sender = {
       name: "CloudDoc Saver",
-      email: process.env.FROM_EMAIL,
+      email: process.env.FROM_EMAIL || "no-reply@hardikproject.com",
     };
     sendSmtpEmail.to = Array.isArray(to)
       ? to.map((email) => ({ email }))
