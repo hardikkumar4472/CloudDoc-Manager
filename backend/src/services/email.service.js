@@ -1,11 +1,14 @@
-// emailService.js
 import dotenv from "dotenv";
-import Brevo from "@brevo/node";
+import brevo from "@getbrevo/brevo-api";
 
 dotenv.config();
 
-const brevo = new Brevo.TransactionalEmailsApi();
-brevo.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
+// Initialize Brevo API client
+const defaultClient = brevo.ApiClient.instance;
+const apiKey = defaultClient.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
+const apiInstance = new brevo.TransactionalEmailsApi();
 
 export const sendOTP = async (email, otp) => {
   const htmlContent = `
@@ -19,7 +22,7 @@ export const sendOTP = async (email, otp) => {
       </span>
     </div>
     <p>This code will expire in <strong>5 minutes</strong>.</p>
-    <p>If you didn’t request this, ignore this email.</p>
+    <p>If you didn't request this, ignore this email.</p>
     <p>Need help? Contact <a href="mailto:civicconnectpvt@gmail.com">civicconnectpvt@gmail.com</a></p>
     <footer style="margin-top:30px; font-size:12px; color:#888;">&copy; ${new Date().getFullYear()} CloudDocManager</footer>
   </div>
@@ -28,18 +31,17 @@ export const sendOTP = async (email, otp) => {
   const textContent = `Your CloudDocManager OTP is: ${otp}. It will expire in 5 minutes.`;
 
   try {
-    const emailData = {
-      sender: {
-        email: process.env.FROM_EMAIL || "no-reply@hardikproject.com",
-        name: "CloudDocManager",
-      },
-      to: [{ email }],
-      subject: "Your CloudDocManager Verification Code",
-      htmlContent,
-      textContent,
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = {
+      email: process.env.FROM_EMAIL || "no-reply@hardikproject.com",
+      name: "CloudDocManager",
     };
+    sendSmtpEmail.to = [{ email }];
+    sendSmtpEmail.subject = "Your CloudDocManager Verification Code";
+    sendSmtpEmail.htmlContent = htmlContent;
+    sendSmtpEmail.textContent = textContent;
 
-    const response = await brevo.sendTransacEmail(emailData);
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log("📤 Brevo OTP sent:", response);
 
     return { success: true, message: "OTP sent successfully", response };
