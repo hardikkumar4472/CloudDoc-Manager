@@ -24,21 +24,33 @@
 //   }
 // };
 
-import { Resend } from "resend";
 import dotenv from "dotenv";
+import Brevo from "@getbrevo/api";
 
 dotenv.config();
 
-// Initialize Resend with your API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Brevo client
+const brevo = new Brevo.TransactionalEmailsApi();
+brevo.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
+
 
 export const sendMail = async ({ to, subject, text, attachments }) => {
   try {
+    // Convert attachments if provided
+    const formattedAttachments = attachments
+      ? attachments.map((file) => ({
+          name: file.filename,
+          url: file.path,
+        }))
+      : [];
+
     const htmlAttachments = attachments
-      ? attachments.map(
-          (att) =>
-            `<p>Attachment: <a href="${att.path}">${att.filename}</a></p>`
-        ).join("")
+      ? attachments
+          .map(
+            (att) =>
+              `<p>Attachment: <a href="${att.path}">${att.filename}</a></p>`
+          )
+          .join("")
       : "";
 
     const htmlContent = `
@@ -48,18 +60,26 @@ export const sendMail = async ({ to, subject, text, attachments }) => {
         ${htmlAttachments}
       </div>
     `;
-
-    const response = await resend.emails.send({
-      from: `"CloudDoc Saver" <${process.env.FROM_EMAIL}>`,
-      to,
+    const emailData = {
+      sender: {
+        name: "CloudDoc Saver",
+        email: process.env.FROM_EMAIL,
+      },
+      to: Array.isArray(to)
+        ? to.map((email) => ({ email }))
+        : [{ email: to }],
       subject,
-      text,
-      html: htmlContent,
-    });
+      htmlContent,
+      textContent: text,
+      attachment: formattedAttachments,
+    };
 
+    const response = await brevo.sendTransacEmail(emailData);
+
+    console.log("✅ Brevo email sent:", response);
     return { success: true, response };
   } catch (err) {
-    console.error("Resend email error:", err);
+    console.error("❌ Brevo email error:", err);
     return { success: false, error: err.message };
   }
 };
