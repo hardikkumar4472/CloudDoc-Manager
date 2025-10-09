@@ -25,7 +25,7 @@
 // };
 
 import dotenv from "dotenv";
-import Brevo from "@getbrevo/api";
+import Brevo from "brevo";
 
 dotenv.config();
 
