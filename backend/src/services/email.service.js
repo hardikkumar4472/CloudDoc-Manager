@@ -196,14 +196,17 @@
 
 
 import dotenv from "dotenv";
-import { Resend } from "resend";
+import SibApiV3Sdk from "sib-api-v3-sdk";
 
 dotenv.config();
-console.log("RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY);
+
+console.log("BREVO_API_KEY exists:", !!process.env.BREVO_API_KEY);
 console.log("FROM_EMAIL:", process.env.FROM_EMAIL);
 
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const client = SibApiV3Sdk.ApiClient.instance;
+client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
+const brevo = new SibApiV3Sdk.TransactionalEmailsApi();
 
 export const sendOTP = async (email, otp) => {
   const htmlContent = `
@@ -279,29 +282,9 @@ export const sendOTP = async (email, otp) => {
               border-top: 1px solid #eeeeee;
               margin-top: 30px;
           }
-          .button {
-              display: inline-block;
-              background-color: #4a86e8;
-              color: white;
-              padding: 12px 24px;
-              text-decoration: none;
-              border-radius: 5px;
-              margin: 15px 0;
-              font-weight: 600;
-          }
           .support-link {
               color: #4a86e8;
               text-decoration: none;
-          }
-          @media (max-width: 600px) {
-              .email-body {
-                  padding: 20px;
-              }
-              .otp-code {
-                  font-size: 24px;
-                  letter-spacing: 5px;
-                  padding: 12px 20px;
-              }
           }
       </style>
   </head>
@@ -324,7 +307,9 @@ export const sendOTP = async (email, otp) => {
                   <strong>Security Note:</strong> If you didn't request this code, please ignore this email or contact our support team immediately.
               </div>
               
-              <p class="message">Need help? Contact our support team at <a href="mailto:civicconnectpvt@gmail.com" class="support-link">civicconnectpvt@gmail.com</a></p>
+              <p class="message">Need help? Contact our support team at 
+                  <a href="mailto:civicconnectpvt@gmail.com" class="support-link">civicconnectpvt@gmail.com</a>
+              </p>
           </div>
           <div class="footer">
               <p>&copy; ${new Date().getFullYear()} CloudDocManager. All rights reserved.</p>
@@ -349,19 +334,23 @@ export const sendOTP = async (email, otp) => {
   `;
 
   try {
-  const response = await resend.emails.send({
-    from: process.env.FROM_EMAIL,
-    to: email,
-    subject: "Your CloudDocManager Verification Code",
-    html: htmlContent,
-    text: textContent,
-  });
+    const emailData = {
+      sender: {
+        email: process.env.FROM_EMAIL || "no-reply@hardikproject.com",
+        name: "CloudDocManager",
+      },
+      to: [{ email }],
+      subject: "Your CloudDocManager Verification Code",
+      htmlContent: htmlContent,
+      textContent: textContent,
+    };
 
-  console.log("📤 Resend response:", response);
-  return { success: true, message: "OTP resent successfully", response };
-} catch (error) {
-  console.error("❌ Resend OTP Error:", error);
-  throw new Error("Failed to send OTP email");
-}
+    const response = await brevo.sendTransacEmail(emailData);
+    console.log("📤 Brevo response:", response);
 
+    return { success: true, message: "OTP sent successfully", response };
+  } catch (error) {
+    console.error("❌ Brevo OTP Error:", error);
+    throw new Error("Failed to send OTP email");
+  }
 };
