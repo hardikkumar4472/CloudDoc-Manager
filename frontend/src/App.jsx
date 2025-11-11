@@ -44,7 +44,7 @@ import DashboardPage from "./DashboardPage";
 import SharedFilePage from "./components/SharedFilePage";
 
 // ✅ Initialize Google Analytics (GA4)
-const TRACKING_ID = "G-XXXXXXXXXX"; // Replace with your actual GA4 measurement ID
+const TRACKING_ID = "G-N4367HGXZZ"; // Replace with your actual GA4 measurement ID
 
 // ✅ Track page views when route changes
 const TrackPageView = () => {
