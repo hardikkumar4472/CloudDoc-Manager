@@ -124,6 +124,40 @@ export default function MainPage() {
    GDPR & SOC2 Compliant
 </p>
         </div>
+
+        {/* Developer Section */}
+        <div className="developer-section">
+          <div className="developer-card">
+            <div className="developer-info">
+              <div className="developer-avatar">
+                <i className="fas fa-code"></i>
+              </div>
+              <div className="developer-details">
+                <h3>Made with <span className="heart">❤️</span> by Hardik</h3>
+                <p>Passionate full-stack developer crafting secure and scalable solutions</p>
+                <div className="social-links">
+                  <a href="https://linkedin.com/in/yourusername" target="_blank" rel="noopener noreferrer" className="social-link">
+                    <i className="fab fa-linkedin"></i>
+                  </a>
+                  <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" className="social-link">
+                    <i className="fab fa-github"></i>
+                  </a>
+                  <a href="https://instagram.com/yourusername" target="_blank" rel="noopener noreferrer" className="social-link">
+                    <i className="fab fa-instagram"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div className="project-message">
+              <p>
+                <i className="fas fa-quote-left"></i>
+                This project represents my commitment to building secure, user-friendly applications that solve real-world problems. 
+                Every line of code is crafted with attention to detail and passion for innovation.
+                <i className="fas fa-quote-right"></i>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <style>{`
@@ -354,6 +388,7 @@ export default function MainPage() {
           border: 1px solid rgba(255, 255, 255, 0.05);
           animation: fadeIn 1s ease 0.9s both;
           max-width: 90%;
+          margin-bottom: 40px;
         }
         
         .security-badge i {
@@ -365,6 +400,128 @@ export default function MainPage() {
         .security-badge p {
           font-size: 14px;
           color: rgba(255, 255, 255, 0.6);
+        }
+        
+        /* Developer Section Styles */
+        .developer-section {
+          width: 100%;
+          max-width: 600px;
+          animation: fadeInUp 1s ease 1.2s both;
+        }
+        
+        .developer-card {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 20px;
+          padding: 30px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+          transition: all 0.3s ease;
+        }
+        
+        .developer-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+          border-color: rgba(79, 195, 247, 0.3);
+        }
+        
+        .developer-info {
+          display: flex;
+          align-items: center;
+          margin-bottom: 20px;
+          text-align: left;
+        }
+        
+        .developer-avatar {
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(45deg, #4fc3f7, #6ab0e6);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 20px;
+          font-size: 24px;
+        }
+        
+        .developer-details h3 {
+          font-size: 18px;
+          font-weight: 600;
+          margin-bottom: 5px;
+        }
+        
+        .developer-details p {
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.7);
+          margin-bottom: 10px;
+        }
+        
+        .heart {
+          color: #ff6b6b;
+          animation: heartbeat 2s infinite;
+        }
+        
+        .social-links {
+          display: flex;
+          gap: 15px;
+        }
+        
+        .social-link {
+          width: 36px;
+          height: 36px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          text-decoration: none;
+          transition: all 0.3s ease;
+          font-size: 16px;
+        }
+        
+        .social-link:hover {
+          background: #4fc3f7;
+          transform: translateY(-3px);
+          box-shadow: 0 5px 15px rgba(79, 195, 247, 0.4);
+        }
+        
+        .project-message {
+          background: rgba(255, 255, 255, 0.03);
+          border-radius: 15px;
+          padding: 20px;
+          border-left: 3px solid #4fc3f7;
+        }
+        
+        .project-message p {
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.8);
+          line-height: 1.6;
+          font-style: italic;
+          position: relative;
+        }
+        
+        .project-message .fa-quote-left {
+          position: absolute;
+          top: -5px;
+          left: -5px;
+          font-size: 12px;
+          color: #4fc3f7;
+          opacity: 0.7;
+        }
+        
+        .project-message .fa-quote-right {
+          position: absolute;
+          bottom: -5px;
+          right: -5px;
+          font-size: 12px;
+          color: #4fc3f7;
+          opacity: 0.7;
+        }
+        
+        @keyframes heartbeat {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
         }
         
         @keyframes fadeInUp {
@@ -451,6 +608,7 @@ export default function MainPage() {
             flex-direction: column;
             text-align: center;
             padding: 12px 15px;
+            margin-bottom: 30px;
           }
           
           .security-badge i {
@@ -460,6 +618,24 @@ export default function MainPage() {
           
           .security-badge p {
             font-size: 12px;
+          }
+          
+          .developer-card {
+            padding: 20px;
+          }
+          
+          .developer-info {
+            flex-direction: column;
+            text-align: center;
+          }
+          
+          .developer-avatar {
+            margin-right: 0;
+            margin-bottom: 15px;
+          }
+          
+          .social-links {
+            justify-content: center;
           }
         }
 
@@ -477,6 +653,10 @@ export default function MainPage() {
             width: 100%;
             max-width: 250px;
             justify-content: center;
+          }
+          
+          .developer-card {
+            padding: 15px;
           }
         }
       `}</style>
