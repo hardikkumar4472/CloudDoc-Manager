@@ -136,13 +136,13 @@ export default function MainPage() {
                 <h3>Made with <span className="heart">❤️</span> by Hardik</h3>
                 <p>Passionate full-stack developer crafting secure and scalable solutions</p>
                 <div className="social-links">
-                  <a href="https://linkedin.com/in/yourusername" target="_blank" rel="noopener noreferrer" className="social-link">
+                  <a href="https://linkedin.com/in/hardik-kumar-63a4b3249/" target="_blank" rel="noopener noreferrer" className="social-link">
                     <i className="fab fa-linkedin"></i>
                   </a>
-                  <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" className="social-link">
+                  <a href="https://github.com/hardikkumar4472" target="_blank" rel="noopener noreferrer" className="social-link">
                     <i className="fab fa-github"></i>
                   </a>
-                  <a href="https://instagram.com/yourusername" target="_blank" rel="noopener noreferrer" className="social-link">
+                  <a href="https://instagram.com/i_m_hrdk_" target="_blank" rel="noopener noreferrer" className="social-link">
                     <i className="fab fa-instagram"></i>
                   </a>
                 </div>
