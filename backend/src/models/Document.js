@@ -15,6 +15,8 @@ const documentSchema = new mongoose.Schema(
 
     shareToken: { type: String, default: null },
     shareExpiry: { type: Date, default: null },
+    isVault: { type: Boolean, default: false },
+    expiresAt: { type: Date, default: null },
   },
   { timestamps: true } 
 );

@@ -82,8 +82,8 @@ export default function ResizeModal({ file, onResize, onClose }) {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(10px);
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(5px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -92,11 +92,12 @@ export default function ResizeModal({ file, onResize, onClose }) {
         }
         
         .modal-content {
-          background: rgba(0, 0, 0, 0);
+          background: var(--bg-secondary);
           border-radius: 40px;
           width: 100%;
           max-width: 500px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+          box-shadow: var(--shadow-lg);
+          border: 1px solid var(--border-color);
         }
         
         .modal-header {
@@ -104,21 +105,27 @@ export default function ResizeModal({ file, onResize, onClose }) {
           justify-content: space-between;
           align-items: center;
           padding: 20px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0);
+          border-bottom: 1px solid var(--border-color);
         }
         
         .modal-header h3 {
           margin: 0;
-          color: #4fc3f7;
+          color: var(--accent-color);
+          font-weight: 600;
         }
         
         .close-btn {
           background: none;
           border: none;
-          color: #fff;
+          color: var(--text-secondary);
           font-size: 20px;
           cursor: pointer;
           padding: 5px;
+          transition: all 0.3s ease;
+        }
+        
+        .close-btn:hover {
+          color: var(--text-primary);
         }
         
         .modal-body {
@@ -136,23 +143,24 @@ export default function ResizeModal({ file, onResize, onClose }) {
         .form-group label {
           display: block;
           margin-bottom: 5px;
-          color: #6ab0e6;
+          color: var(--accent-hover);
           font-weight: 500;
         }
         
         .form-group input {
           width: 100%;
           padding: 10px 15px;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--input-bg);
+          border: 1px solid var(--border-color);
           border-radius: 40px;
-          color: #fff;
+          color: var(--text-primary);
           box-sizing: border-box;
         }
         
         .form-group input:focus {
           outline: none;
-          border-color: rgba(79, 195, 247, 0.5);
+          border-color: var(--accent-color);
+          box-shadow: 0 0 0 2px var(--accent-glow);
         }
         
         .form-actions {
@@ -163,16 +171,17 @@ export default function ResizeModal({ file, onResize, onClose }) {
         
         .cancel-btn {
           padding: 10px 20px;
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: transparent;
+          border: 1px solid var(--border-color);
           border-radius: 30px;
-          color: #fff;
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.3s ease;
         }
         
         .cancel-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
+          background: var(--bg-primary);
+          color: var(--text-primary);
         }
         
         .resize-btn {
@@ -180,37 +189,37 @@ export default function ResizeModal({ file, onResize, onClose }) {
           align-items: center;
           gap: 8px;
           padding: 10px 20px;
-          background: linear-gradient(45deg, #4fc3f7, #6ab0e6);
-          color: #0a0e17;
+          background: linear-gradient(45deg, var(--accent-color), var(--accent-hover));
+          color: white;
           border: none;
           border-radius: 30px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s ease;
+          box-shadow: 0 4px 15px var(--accent-glow);
         }
         
         .resize-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 5px 15px rgba(79, 195, 247, 0);
+          box-shadow: 0 8px 20px var(--accent-glow);
         }
         
         .resize-info {
-          background: rgba(79, 195, 247, 0.1);
+          background: var(--input-bg);
           border-radius: 8px;
           padding: 15px;
-          border-left: 4px solid #4fc3f7;
+          border-left: 4px solid var(--accent-color);
         }
         
         .resize-info p {
           margin: 5px 0;
           font-size: 14px;
-          color: rgba(255, 255, 255, 0.8);
+          color: var(--text-secondary);
         }
         
         .resize-info i {
-          color: #4fc3f7;
+          color: var(--accent-color);
           margin-right: 8px;
-          border-radius: 40px;
         }
         
         @media (max-width: 768px) {

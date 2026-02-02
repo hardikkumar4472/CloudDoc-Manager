@@ -173,15 +173,15 @@ export default function CompressModal({ file, onClose, onCompress }) {
         }
         
         .modal-content {
-          background: rgba(20, 25, 35, 0.95);
+          background: var(--bg-secondary);
           border-radius: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid var(--border-color);
           width: 100%;
           max-width: 500px;
           max-height: 90vh;
           overflow-y: auto;
           backdrop-filter: blur(20px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+          box-shadow: var(--shadow-lg);
         }
         
         .modal-header {
@@ -193,18 +193,18 @@ export default function CompressModal({ file, onClose, onCompress }) {
         }
         
         .modal-header h3 {
-          color: #4fc3f7;
+          color: var(--accent-color);
           font-weight: 600;
           margin: 0;
         }
         
         .close-btn {
-          background: rgba(255, 255, 255, 0.1);
+          background: var(--input-bg);
           border: none;
           border-radius: 50%;
           width: 40px;
           height: 40px;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.3s ease;
           display: flex;
@@ -213,8 +213,8 @@ export default function CompressModal({ file, onClose, onCompress }) {
         }
         
         .close-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
-          color: #fff;
+          background: var(--bg-primary);
+          color: var(--text-primary);
         }
         
         .modal-body {
@@ -225,10 +225,11 @@ export default function CompressModal({ file, onClose, onCompress }) {
           display: flex;
           align-items: center;
           gap: 12px;
-          background: rgba(255, 255, 255, 0.05);
+          background: var(--input-bg);
           padding: 15px;
           border-radius: 12px;
           margin-bottom: 25px;
+          border: 1px solid var(--border-color);
         }
         
         .file-info i {
@@ -242,15 +243,16 @@ export default function CompressModal({ file, onClose, onCompress }) {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          color: var(--text-primary);
         }
         
         .file-size {
-          color: rgba(255, 255, 255, 0.6);
+          color: var(--text-secondary);
           font-size: 14px;
         }
         
         .compression-options h4 {
-          color: rgba(255, 255, 255, 0.9);
+          color: var(--text-primary);
           margin-bottom: 15px;
           font-weight: 500;
         }
@@ -266,21 +268,21 @@ export default function CompressModal({ file, onClose, onCompress }) {
           display: flex;
           align-items: center;
           padding: 15px;
-          border: 2px solid rgba(255, 255, 255, 0.1);
+          border: 2px solid var(--border-color);
           border-radius: 12px;
           cursor: pointer;
           transition: all 0.3s ease;
-          background: rgba(255, 255, 255, 0.03);
+          background: var(--input-bg);
         }
         
         .compression-option:hover {
-          border-color: rgba(79, 195, 247, 0.3);
-          background: rgba(79, 195, 247, 0.05);
+          border-color: var(--accent-glow);
+          background: var(--bg-secondary);
         }
         
         .compression-option.selected {
-          border-color: #4fc3f7;
-          background: rgba(79, 195, 247, 0.1);
+          border-color: var(--accent-color);
+          background: var(--accent-glow);
         }
         
         .compression-option input {
@@ -295,20 +297,20 @@ export default function CompressModal({ file, onClose, onCompress }) {
           display: block;
           font-weight: 500;
           margin-bottom: 4px;
-          color: rgba(255, 255, 255, 0.9);
+          color: var(--text-primary);
         }
         
         .option-description {
           display: block;
           font-size: 14px;
-          color: rgba(255, 255, 255, 0.6);
+          color: var(--text-secondary);
           margin-bottom: 8px;
         }
         
         .quality-bar {
           width: 100%;
           height: 4px;
-          background: rgba(255, 255, 255, 0.1);
+          background: var(--border-color);
           border-radius: 2px;
           overflow: hidden;
         }
@@ -337,10 +339,11 @@ export default function CompressModal({ file, onClose, onCompress }) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          background: rgba(255, 255, 255, 0.05);
+          background: var(--input-bg);
           padding: 20px;
           border-radius: 12px;
           margin-bottom: 25px;
+          border: 1px solid var(--border-color);
         }
         
         .preview-item {
@@ -353,15 +356,15 @@ export default function CompressModal({ file, onClose, onCompress }) {
         
         .preview-item span:first-child {
           font-weight: 500;
-          color: rgba(255, 255, 255, 0.8);
+          color: var(--text-secondary);
         }
         
         .preview-item.compressed .file-size {
-          color: #4fc3f7;
+          color: var(--accent-color);
         }
         
         .preview-arrow {
-          color: rgba(255, 255, 255, 0.3);
+          color: var(--text-muted);
           padding: 0 20px;
         }
         
@@ -373,7 +376,7 @@ export default function CompressModal({ file, onClose, onCompress }) {
           display: flex;
           gap: 15px;
           padding: 20px 25px;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          border-top: 1px solid var(--border-color);
         }
         
         .modal-footer button {
@@ -391,21 +394,23 @@ export default function CompressModal({ file, onClose, onCompress }) {
         }
         
         .btn-secondary {
-          background: rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.8);
+          background: var(--input-bg);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-color) !important;
         }
         
         .btn-secondary:hover:not(:disabled) {
-          background: rgba(255, 255, 255, 0.2);
+          background: var(--bg-secondary);
+          color: var(--text-primary);
         }
         
         .btn-primary {
-          background: linear-gradient(135deg, #4fc3f7, #6ab0e6);
+          background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
           color: white;
         }
         
         .btn-primary:hover:not(:disabled) {
-          background: linear-gradient(135deg, #6ab0e6, #4fc3f7);
+          background: linear-gradient(135deg, var(--accent-hover), var(--accent-color));
           transform: translateY(-1px);
         }
         

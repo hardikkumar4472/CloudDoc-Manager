@@ -3,6 +3,7 @@ import Document from "../models/Document.js";
 import sharp from "sharp"; 
 import crypto from "crypto";
 import jsPDF from "jspdf";
+import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib';
 import { sendMail } from "../services/sendEmail.js";
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -127,7 +128,23 @@ export const uploadFile = async (req, res) => {
 };
 export const getFiles = async (req, res) => {
   try {
-    const docs = await Document.find({ uploadedBy: req.userId })
+    const { vault } = req.query;
+    const query = { uploadedBy: req.userId };
+
+    // Handle Vault Visibility
+    if (vault === 'true') {
+      query.isVault = true;
+    } else {
+      query.isVault = { $ne: true }; // Default: hide vault items
+    }
+
+    // Handle Expiry: Exclude files that have expired
+    query.$or = [
+      { expiresAt: null },
+      { expiresAt: { $gt: new Date() } }
+    ];
+
+    const docs = await Document.find(query)
       .sort({ isPinned: -1, createdAt: -1 }); // Pinned first, then newest
     res.json(docs);
   } catch (error) {
@@ -458,27 +475,23 @@ export const compressPDF = async (req, res) => {
     if (error) throw error;
 
     const buffer = Buffer.from(await data.arrayBuffer());
+    
+    // Load the PDF
     const pdfDoc = await PDFDocument.load(buffer);
-    let quality;
-    switch (level) {
-      case "low":
-        quality = 0.3;
-        break;
-      case "medium":
-        quality = 0.6;
-        break;
-      case "high":
-      default:
-        quality = 0.85;
-        break;
-    }
+    
+    // Create a new PDF to strip metadata/unused objects
     const compressedDoc = await PDFDocument.create();
+    
+    // Copy all pages
     const pages = await compressedDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
-    pages.forEach(page => {
-      compressedDoc.addPage(page);
-    });
-    compressedDoc.setTitle(`Compressed (${level}) - ${doc.filename}`);
-    compressedDoc.setAuthor("PDF Compressor");
+    pages.forEach((page) => compressedDoc.addPage(page));
+
+    // Set minimal metadata
+    compressedDoc.setTitle(doc.filename);
+    compressedDoc.setProducer('CloudDoc Manager');
+    compressedDoc.setCreator('CloudDoc Manager');
+
+    // Save with object streams (lossless compression)
     const compressedPDF = await compressedDoc.save({
       useObjectStreams: true,
       compress: true,
@@ -490,11 +503,224 @@ export const compressPDF = async (req, res) => {
     );
     res.setHeader("Content-Type", "application/pdf");
     res.send(Buffer.from(compressedPDF));
+
   } catch (err) {
     console.error("PDF compression error:", err);
     res.status(500).json({ 
-      msg: "Error compressing PDF", 
+      msg: "Error compressing PDF. Aggressive compression requires server-side tools.", 
       error: err.message 
     });
   }
+};
+
+// --- PDF Features ---
+
+export const mergePDFs = async (req, res) => {
+  try {
+    const { docIds } = req.body; // Array of IDs in order
+    if (!docIds || !docIds.length) return res.status(400).json({ msg: "No documents selected" });
+
+    const mergedPdf = await PDFDocument.create();
+
+    for (const id of docIds) {
+      const doc = await Document.findById(id);
+      if (!doc) continue;
+
+      const { data, error } = await supabase.storage.from("documents").download(doc.public_id);
+      if (error) continue;
+
+      const buffer = Buffer.from(await data.arrayBuffer());
+      const pdf = await PDFDocument.load(buffer);
+      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+
+    const pdfBytes = await mergedPdf.save();
+    
+    res.setHeader("Content-Disposition", 'attachment; filename="merged-document.pdf"');
+    res.setHeader("Content-Type", "application/pdf");
+    res.send(Buffer.from(pdfBytes));
+  } catch (error) {
+    res.status(500).json({ msg: "Error merging PDFs", error: error.message });
+  }
+};
+
+export const splitPDF = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { startPage, endPage } = req.body; // 1-based index
+  
+      const doc = await Document.findById(id);
+      if (!doc) return res.status(404).json({ msg: "Document not found" });
+  
+      const { data, error } = await supabase.storage.from("documents").download(doc.public_id);
+      if (error) throw error;
+  
+      const pdfDoc = await PDFDocument.load(Buffer.from(await data.arrayBuffer()));
+      const newPdf = await PDFDocument.create();
+      
+      const pageCount = pdfDoc.getPageCount();
+      const start = Math.max(0, parseInt(startPage) - 1);
+      const end = Math.min(pageCount - 1, parseInt(endPage) - 1);
+      
+      const pageIndices = [];
+      for(let i=start; i<=end; i++) pageIndices.push(i);
+
+      if(pageIndices.length === 0) return res.status(400).json({ msg: "Invalid page range" });
+  
+      const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
+      copiedPages.forEach((page) => newPdf.addPage(page));
+  
+      const pdfBytes = await newPdf.save();
+      
+      res.setHeader("Content-Disposition", `attachment; filename="split-${doc.filename}"`);
+      res.setHeader("Content-Type", "application/pdf");
+      res.send(Buffer.from(pdfBytes));
+    } catch (error) {
+      res.status(500).json({ msg: "Error splitting PDF", error: error.message });
+    }
+  };
+
+export const addWatermark = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { text } = req.body;
+
+        const doc = await Document.findById(id);
+        if (!doc) return res.status(404).json({ msg: "Document not found" });
+
+        const { data } = await supabase.storage.from("documents").download(doc.public_id);
+        const buffer = Buffer.from(await data.arrayBuffer());
+
+        if (doc.type === "application/pdf") {
+            const pdfDoc = await PDFDocument.load(buffer);
+            const pages = pdfDoc.getPages();
+            const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+            pages.forEach(page => {
+                const { width, height } = page.getSize();
+                page.drawText(text, {
+                    x: width / 2 - 100,
+                    y: height / 2,
+                    size: 50,
+                    font: font,
+                    color: rgb(0.7, 0.7, 0.7),
+                    rotate: degrees(45),
+                    opacity: 0.5,
+                });
+            });
+
+            const pdfBytes = await pdfDoc.save();
+            res.setHeader("Content-Disposition", `attachment; filename="watermarked-${doc.filename}"`);
+            res.setHeader("Content-Type", "application/pdf");
+            res.send(Buffer.from(pdfBytes));
+        } else if (doc.type.startsWith("image/")) {
+             // Basic image watermark with SVG text
+             const svgImage = `
+             <svg width="500" height="100">
+               <style>
+                 .title { fill: rgba(255, 255, 255, 0.5); font-size: 48px; font-weight: bold; font-family: sans-serif; }
+               </style>
+               <text x="50%" y="50%" text-anchor="middle" class="title">${text}</text>
+             </svg>
+             `;
+             
+             const data = await sharp(buffer)
+                .composite([{ input: Buffer.from(svgImage), gravity: 'center' }])
+                .toBuffer();
+             
+             res.setHeader("Content-Disposition", `attachment; filename="watermarked-${doc.filename}"`);
+             res.setHeader("Content-Type", doc.type);
+             res.send(data);
+        } else {
+            return res.status(400).json({ msg: "Unsupported file type for watermark" });
+        }
+    } catch (error) {
+        res.status(500).json({ msg: "Error adding watermark", error: error.message });
+    }
+};
+
+// --- Image Features ---
+
+export const convertImageFormat = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { format } = req.body; // 'webp', 'png', 'jpeg'
+
+        const doc = await Document.findById(id);
+        if (!doc.type.startsWith("image/")) return res.status(400).json({ msg: "Not an image" });
+
+        const { data } = await supabase.storage.from("documents").download(doc.public_id);
+        let pipeline = sharp(Buffer.from(await data.arrayBuffer()));
+
+        if (format === 'webp') pipeline = pipeline.webp();
+        else if (format === 'png') pipeline = pipeline.png();
+        else if (format === 'jpeg') pipeline = pipeline.jpeg();
+
+        const buffer = await pipeline.toBuffer();
+        
+        res.setHeader("Content-Disposition", `attachment; filename="converted.${format}"`);
+        res.setHeader("Content-Type", `image/${format}`);
+        res.send(buffer);
+    } catch (error) {
+        res.status(500).json({ msg: "Error converting image", error: error.message });
+    }
+};
+
+export const cropImage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { width, height, left, top } = req.body;
+
+        const doc = await Document.findById(id);
+        if (!doc.type.startsWith("image/")) return res.status(400).json({ msg: "Not an image" });
+
+        const { data } = await supabase.storage.from("documents").download(doc.public_id);
+        
+        const buffer = await sharp(Buffer.from(await data.arrayBuffer()))
+            .extract({ width: parseInt(width), height: parseInt(height), left: parseInt(left), top: parseInt(top) })
+            .toBuffer();
+
+        res.setHeader("Content-Disposition", `attachment; filename="cropped-${doc.filename}"`);
+        res.setHeader("Content-Type", doc.type);
+        res.send(buffer);
+    } catch (error) {
+        res.status(500).json({ msg: "Error cropping image", error: error.message });
+    }
+};
+
+// --- General Features ---
+
+export const toggleVault = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const doc = await Document.findById(id);
+        if (!doc) return res.status(404).json({ msg: "Document not found" });
+
+        doc.isVault = !doc.isVault; // Toggle
+        await doc.save();
+        res.json({ msg: doc.isVault ? "Moved to Vault" : "Removed from Vault", isVault: doc.isVault });
+    } catch (error) {
+        res.status(500).json({ msg: "Error toggling vault", error: error.message });
+    }
+};
+
+export const setFileExpiry = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { hours } = req.body; // Set expiry in X hours
+
+        const doc = await Document.findById(id);
+        if (!doc) return res.status(404).json({ msg: "Document not found" });
+
+        if (hours) {
+            doc.expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
+        } else {
+            doc.expiresAt = null; // Remove expiry
+        }
+        await doc.save();
+        res.json({ msg: "Expiry updated", expiresAt: doc.expiresAt });
+    } catch (error) {
+        res.status(500).json({ msg: "Error setting expiry", error: error.message });
+    }
 };

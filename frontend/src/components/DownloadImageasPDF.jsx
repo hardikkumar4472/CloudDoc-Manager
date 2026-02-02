@@ -107,18 +107,20 @@ export default function DownloadImageAsPDF({ file, onClose }) {
             justify-content: center;
             z-index: 1000;
             padding: 20px;
+            backdrop-filter: blur(5px);
           }
           
           .modal {
-            background: rgba(255, 255, 255, 0);
+            background: var(--bg-secondary);
             backdrop-filter: blur(20px);
             border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
             width: 100%;
             max-width: 500px;
             max-height: 80vh;
             overflow-y: auto;
             backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-lg);
           }
           
           .modal-header {
@@ -126,21 +128,26 @@ export default function DownloadImageAsPDF({ file, onClose }) {
             justify-content: space-between;
             align-items: center;
             padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0);
+            border-bottom: 1px solid var(--border-color);
           }
           
           .modal-header h3 {
             margin: 0;
-            color: #4fc3f7;
+            color: var(--accent-color);
           }
           
           .close-btn {
             background: none;
             border: none;
-            color: #fff;
+            color: var(--text-secondary);
             font-size: 18px;
             cursor: pointer;
             padding: 5px;
+            transition: all 0.3s ease;
+          }
+          
+          .close-btn:hover {
+            color: var(--text-primary);
           }
           
           .modal-content {
@@ -189,11 +196,12 @@ export default function DownloadImageAsPDF({ file, onClose }) {
           .file-info h4 {
             margin: 0 0 10px 0;
             word-break: break-word;
+            color: var(--text-primary);
           }
           
           .file-info p {
             margin: 5px 0;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--text-secondary);
             font-size: 14px;
           }
           
@@ -218,6 +226,7 @@ export default function DownloadImageAsPDF({ file, onClose }) {
           .btn-primary {
             background: linear-gradient(45deg, #e74c3c, #c0392b);
             color: white;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
           }
           
           .btn-primary:hover:not(:disabled) {
@@ -226,14 +235,20 @@ export default function DownloadImageAsPDF({ file, onClose }) {
           }
           
           .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+          }
+          
+          .btn-secondary:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
           }
           
           .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            box-shadow: none;
           }
           
           @media (max-width: 600px) {

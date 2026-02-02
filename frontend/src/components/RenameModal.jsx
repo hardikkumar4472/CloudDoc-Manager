@@ -82,24 +82,23 @@ export default function RenameModal({ isOpen, onClose, currentName, onRename, fi
           left: 0;
           right: 0;
           bottom: 0;
-          // background: rgba(0, 0, 0, 0.3);
+          background: rgba(0, 0, 0, 0.5);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 1000;
           padding: 20px;
-          backdrop-filter: blur(10px);
+          backdrop-filter: blur(5px);
         }
         
         .modal-content {
-          background: rgba(0, 0, 0, 0.43);
+          background: var(--bg-secondary);
           border-radius: 15px;
           width: 100%;
           max-width: 450px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.53);
+          box-shadow: var(--shadow-lg);
           overflow: hidden;
-          backdrop-filter: blur(50px);
-          border: 1px solid rgba(0, 0, 0, 0.7);
+          border: 1px solid var(--border-color);
         }
         
         .modal-header {
@@ -107,20 +106,19 @@ export default function RenameModal({ isOpen, onClose, currentName, onRename, fi
           justify-content: space-between;
           align-items: center;
           padding: 20px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(50px);
+          border-bottom: 1px solid var(--border-color);
         }
         
         .modal-header h3 {
           margin: 0;
-          color: #4fc3f7;
+          color: var(--accent-color);
           font-weight: 600;
         }
         
         .close-btn {
           background: none;
           border: none;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           font-size: 18px;
           cursor: pointer;
           width: 32px;
@@ -129,10 +127,12 @@ export default function RenameModal({ isOpen, onClose, currentName, onRename, fi
           display: flex;
           align-items: center;
           justify-content: center;
+          transition: all 0.3s ease;
         }
         
         .close-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
+          background: var(--bg-primary);
+          color: var(--text-primary);
         }
         
         .modal-body {
@@ -142,23 +142,24 @@ export default function RenameModal({ isOpen, onClose, currentName, onRename, fi
         .modal-body label {
           display: block;
           margin-bottom: 8px;
-          color: rgba(255, 255, 255, 0.8);
+          color: var(--text-secondary);
           font-size: 14px;
         }
         
         .modal-body input {
           width: 100%;
           padding: 12px 15px;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--input-bg);
+          border: 1px solid var(--border-color);
           border-radius: 50px;
-          color: #fff;
+          color: var(--text-primary);
           font-size: 16px;
         }
         
         .modal-body input:focus {
           outline: none;
-          border-color: #4fc3f7;
+          border-color: var(--accent-color);
+          box-shadow: 0 0 0 2px var(--accent-glow);
         }
         
         .modal-footer {
@@ -166,7 +167,7 @@ export default function RenameModal({ isOpen, onClose, currentName, onRename, fi
           justify-content: flex-end;
           gap: 10px;
           padding: 20px;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          border-top: 1px solid var(--border-color);
         }
         
         .cancel-btn, .rename-btn {
@@ -181,29 +182,32 @@ export default function RenameModal({ isOpen, onClose, currentName, onRename, fi
         }
         
         .cancel-btn {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.8);
+          background: transparent;
+          border: 1px solid var(--border-color);
+          color: var(--text-secondary);
         }
         
         .cancel-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
+          background: var(--bg-primary);
+          color: var(--text-primary);
         }
         
         .rename-btn {
-          background: #4fc3f7;
+          background: linear-gradient(45deg, var(--accent-color), var(--accent-hover));
           border: none;
-          color: #0a0e17;
+          color: white;
+          box-shadow: 0 4px 15px var(--accent-glow);
         }
         
         .rename-btn:hover:not(:disabled) {
-          background: #6ab0e6;
           transform: translateY(-2px);
+          box-shadow: 0 8px 20px var(--accent-glow);
         }
         
         .rename-btn:disabled {
           opacity: 0.7;
           cursor: not-allowed;
+          box-shadow: none;
         }
       `}</style>
     </div>

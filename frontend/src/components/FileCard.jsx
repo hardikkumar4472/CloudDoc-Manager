@@ -17,7 +17,13 @@ export default function FileCard({
   onShareFile,
   onDownloadAsPdf,
   onSendEmail,
-  onCompressPDF
+  onCompressPDF,
+  onToggleVault,
+  onSetExpiry,
+  onWatermark,
+  onConvertImage,
+  onSplitPDF,
+  onCropImage
 }) {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
@@ -246,7 +252,7 @@ export default function FileCard({
               onMouseLeave={() => setActiveTooltip(null)}
             >
               <a 
-                href={`https://clouddoc-manager.onrender.com/api/docs/download/${file._id}`}
+                href={`http://localhost:5000/api/docs/download/${file._id}`}
                 download={file.filename}
                 className="action-btn download-btn"
               >
@@ -273,6 +279,54 @@ export default function FileCard({
               </button>
               {activeTooltip === 'delete' && <span className="tooltip">Delete file</span>}
             </div>
+
+            {/* New Features */}
+            <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('vault')} onMouseLeave={() => setActiveTooltip(null)}>
+                <button onClick={() => onToggleVault(file._id)} className={`action-btn vault-btn ${file.isVault ? 'active' : ''}`}>
+                    <i className={`fas ${file.isVault ? 'fa-lock-open' : 'fa-lock'}`}></i>
+                </button>
+                {activeTooltip === 'vault' && <span className="tooltip">{file.isVault ? 'Remove from Vault' : 'Move to Vault'}</span>}
+            </div>
+
+            <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('expiry')} onMouseLeave={() => setActiveTooltip(null)}>
+                <button onClick={() => onSetExpiry(file._id)} className="action-btn expiry-btn">
+                    <i className="fas fa-clock"></i>
+                </button>
+                {activeTooltip === 'expiry' && <span className="tooltip">Set Expiry</span>}
+            </div>
+
+            <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('watermark')} onMouseLeave={() => setActiveTooltip(null)}>
+                <button onClick={() => onWatermark(file._id)} className="action-btn watermark-btn">
+                    <i className="fas fa-tint"></i>
+                </button>
+                {activeTooltip === 'watermark' && <span className="tooltip">Add Watermark</span>}
+            </div>
+
+            {isPDF && (
+                <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('split')} onMouseLeave={() => setActiveTooltip(null)}>
+                    <button onClick={() => onSplitPDF(file)} className="action-btn split-btn">
+                        <i className="fas fa-cut"></i>
+                    </button>
+                    {activeTooltip === 'split' && <span className="tooltip">Split PDF</span>}
+                </div>
+            )}
+
+            {isImage && (
+                <>
+                <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('convert')} onMouseLeave={() => setActiveTooltip(null)}>
+                    <button onClick={() => onConvertImage(file._id)} className="action-btn convert-btn">
+                        <i className="fas fa-exchange-alt"></i>
+                    </button>
+                    {activeTooltip === 'convert' && <span className="tooltip">Convert Format</span>}
+                </div>
+                <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('crop')} onMouseLeave={() => setActiveTooltip(null)}>
+                    <button onClick={() => onCropImage(file._id)} className="action-btn crop-btn">
+                        <i className="fas fa-crop"></i>
+                    </button>
+                    {activeTooltip === 'crop' && <span className="tooltip">Crop Image</span>}
+                </div>
+                </>
+            )}
           </div>
         </div>
       </div>
@@ -288,24 +342,25 @@ export default function FileCard({
 
       <style>{`
         .file-card {
-          background: rgba(0, 0, 0, 0.7);
+          background: var(--card-bg);
           border-radius: 15px;
           overflow: hidden;
           transition: all 0.3s ease;
-          border: 1px solid rgba(255, 255, 255, 0.25);
+          border: 1px solid var(--border-color);
           width: 100%;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
           position: relative;
           backdrop-filter: blur(80px);
-          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+          box-shadow: var(--shadow-md);
         }
         
         .file-card:hover {
           transform: translateY(-5px);
-          background: rgba(0, 0, 0, 0.12);
-          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.86);
+          background: var(--bg-secondary);
+          box-shadow: var(--shadow-lg);
+          border-color: var(--accent-color);
         }
         
         .file-thumbnail {
@@ -342,8 +397,9 @@ export default function FileCard({
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(45deg, #4fc3f7, #6ab0e6);
+          background: linear-gradient(45deg, var(--accent-color), var(--accent-hover));
           font-size: 48px;
+          color: white;
         }
         
         .file-details {
@@ -372,6 +428,7 @@ export default function FileCard({
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           flex: 1;
+          color: var(--text-primary);
         }
         
         .status-badges {
@@ -414,12 +471,12 @@ export default function FileCard({
           align-items: center;
           gap: 8px;
           font-size: 13px;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
         }
         
         .meta-item i {
           width: 16px;
-          color: #4fc3f7;
+          color: var(--accent-color);
         }
         
         .file-actions {
@@ -503,9 +560,9 @@ export default function FileCard({
         }
         
         .favorite-btn {
-          background: rgba(255, 255, 255, 0.08);
-          color: rgba(255, 255, 255, 0.7);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--input-bg);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-color);
         }
         
         .favorite-btn.active, .favorite-btn:hover {
@@ -515,9 +572,9 @@ export default function FileCard({
         }
         
         .pin-btn {
-          background: rgba(255, 255, 255, 0.08);
-          color: rgba(255, 255, 255, 0.7);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--input-bg);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-color);
         }
         
         .pin-btn.active, .pin-btn:hover {
@@ -601,6 +658,24 @@ export default function FileCard({
           opacity: 0.5;
           cursor: not-allowed;
         }
+
+        .vault-btn { background: rgba(96, 125, 139, 0.2); color: #607d8b; border: 1px solid rgba(96, 125, 139, 0.3); }
+        .vault-btn:hover, .vault-btn.active { background: rgba(96, 125, 139, 0.3); color: #455a64; }
+
+        .expiry-btn { background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3); }
+        .expiry-btn:hover { background: rgba(255, 152, 0, 0.3); }
+
+        .watermark-btn { background: rgba(0, 188, 212, 0.2); color: #00bcd4; border: 1px solid rgba(0, 188, 212, 0.3); }
+        .watermark-btn:hover { background: rgba(0, 188, 212, 0.3); }
+
+        .split-btn { background: rgba(121, 85, 72, 0.2); color: #795548; border: 1px solid rgba(121, 85, 72, 0.3); }
+        .split-btn:hover { background: rgba(121, 85, 72, 0.3); }
+
+        .convert-btn { background: rgba(103, 58, 183, 0.2); color: #673ab7; border: 1px solid rgba(103, 58, 183, 0.3); }
+        .convert-btn:hover { background: rgba(103, 58, 183, 0.3); }
+
+        .crop-btn { background: rgba(233, 30, 99, 0.2); color: #e91e63; border: 1px solid rgba(233, 30, 99, 0.3); }
+        .crop-btn:hover { background: rgba(233, 30, 99, 0.3); }
         
         @media (max-width: 480px) {
           .file-thumbnail, .file-icon-large {

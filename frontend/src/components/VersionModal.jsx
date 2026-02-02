@@ -114,16 +114,18 @@ export default function VersionModal({
           justify-content: center;
           z-index: 1000;
           padding: 20px;
+          backdrop-filter: blur(5px);
         }
         
         .modal-content {
-          background: #1a2639;
+          background: var(--bg-secondary);
           border-radius: 15px;
           width: 100%;
           max-width: 700px;
           max-height: 80vh;
           overflow-y: auto;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+          box-shadow: var(--shadow-lg);
+          border: 1px solid var(--border-color);
         }
         
         .modal-header {
@@ -131,21 +133,27 @@ export default function VersionModal({
           justify-content: space-between;
           align-items: center;
           padding: 20px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          border-bottom: 1px solid var(--border-color);
         }
         
         .modal-header h3 {
           margin: 0;
-          color: #4fc3f7;
+          color: var(--accent-color);
+          font-weight: 600;
         }
         
         .close-btn {
           background: none;
           border: none;
-          color: #fff;
+          color: var(--text-secondary);
           font-size: 20px;
           cursor: pointer;
           padding: 5px;
+          transition: all 0.3s ease;
+        }
+        
+        .close-btn:hover {
+          color: var(--text-primary);
         }
         
         .modal-body {
@@ -158,7 +166,7 @@ export default function VersionModal({
         
         .upload-version-section h4 {
           margin-bottom: 15px;
-          color: #6ab0e6;
+          color: var(--accent-hover);
         }
         
         .version-upload-area {
@@ -170,7 +178,7 @@ export default function VersionModal({
         
         .versions-list h4 {
           margin-bottom: 15px;
-          color: #6ab0e6;
+          color: var(--accent-hover);
         }
         
         .versions-container {
@@ -184,9 +192,9 @@ export default function VersionModal({
           justify-content: space-between;
           align-items: center;
           padding: 15px;
-          background: rgba(255, 255, 255, 0.05);
+          background: var(--input-bg);
           border-radius: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid var(--border-color);
         }
         
         .version-info {
@@ -196,6 +204,7 @@ export default function VersionModal({
         .version-number {
           font-weight: 600;
           margin-bottom: 5px;
+          color: var(--text-primary);
         }
         
         .restore-badge {
@@ -209,7 +218,7 @@ export default function VersionModal({
         
         .version-date {
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
         }
         
         .version-actions {
@@ -252,7 +261,7 @@ export default function VersionModal({
         
         .no-versions {
           text-align: center;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           padding: 20px;
         }
         

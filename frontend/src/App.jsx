@@ -42,6 +42,9 @@ import LoginPage from "./LoginPage";
 import RegisterPage from "./RegisterPage";
 import DashboardPage from "./DashboardPage";
 import SharedFilePage from "./components/SharedFilePage";
+import CustomCursor from "./components/CustomCursor";
+import { ThemeProvider } from "./context/ThemeContext";
+import ThemeToggle from "./components/ThemeToggle";
 
 // ✅ Initialize Google Analytics (GA4)
 const TRACKING_ID = "G-N4367HGXZZ"; // Replace with your actual GA4 measurement ID
@@ -71,7 +74,10 @@ export default function App() {
   }, []);
 
   return (
-    <BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <CustomCursor />
+        <ThemeToggle />
       <TrackPageView />
       <Routes>
         <Route path="/" element={<MainPage />} />
@@ -88,6 +94,7 @@ export default function App() {
         <Route path="/share/:token" element={<SharedFilePage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

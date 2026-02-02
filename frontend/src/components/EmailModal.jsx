@@ -97,16 +97,18 @@ export default function EmailModal({ file, onClose, onSendEmail }) {
           justify-content: center;
           z-index: 1000;
           padding: 20px;
+          backdrop-filter: blur(5px);
         }
         
         .modal-content {
-          background: #0d11172a;
+          background: var(--bg-secondary);
           border-radius: 15px;
           padding: 25px;
           width: 100%;
           max-width: 500px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid var(--border-color);
           backdrop-filter: blur(40px);
+          box-shadow: var(--shadow-lg);
         }
         
         .modal-header {
@@ -117,21 +119,22 @@ export default function EmailModal({ file, onClose, onSendEmail }) {
         }
         
         .modal-header h3 {
-          color: #4fc3f7;
+          color: var(--accent-color);
           margin: 0;
         }
         
         .close-btn {
           background: none;
           border: none;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           cursor: pointer;
           font-size: 18px;
           padding: 5px;
+          transition: all 0.3s ease;
         }
         
         .close-btn:hover {
-          color: #fff;
+          color: var(--text-primary);
         }
         
         .email-form {
@@ -147,24 +150,25 @@ export default function EmailModal({ file, onClose, onSendEmail }) {
         }
         
         .form-group label {
-          color: rgba(255, 255, 255, 0.8);
+          color: var(--text-secondary);
           font-weight: 500;
         }
         
         .form-group input,
         .form-group textarea {
           padding: 12px;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--input-bg);
+          border: 1px solid var(--border-color);
           border-radius: 30px;
-          color: #fff;
+          color: var(--text-primary);
           font-size: 14px;
         }
         
         .form-group input:focus,
         .form-group textarea:focus {
           outline: none;
-          border-color: #4fc3f7;
+          border-color: var(--accent-color);
+          box-shadow: 0 0 0 2px var(--accent-glow);
         }
         
         .form-actions {
@@ -176,16 +180,17 @@ export default function EmailModal({ file, onClose, onSendEmail }) {
         
         .cancel-btn {
           padding: 10px 20px;
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: transparent;
+          border: 1px solid var(--border-color);
           border-radius: 40px;
-          color: rgba(255, 255, 255, 0.8);
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.3s ease;
         }
         
         .cancel-btn:hover {
-          background: rgba(255, 255, 255, 0.15);
+          background: var(--bg-primary);
+          color: var(--text-primary);
         }
         
         .send-btn {

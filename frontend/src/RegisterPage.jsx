@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import { useTheme } from "./context/ThemeContext";
 
 export default function RegisterPage() {
   const [step, setStep] = useState("register");
@@ -9,6 +10,7 @@ export default function RegisterPage() {
   const [isHovered, setIsHovered] = useState({ register: false, verify: false });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   // Background particle effect
   useEffect(() => {
@@ -22,6 +24,9 @@ export default function RegisterPage() {
     const particles = [];
     const particleCount = 60;
     
+    // Theme-aware particle color
+    const particleColor = theme === 'dark' ? 'rgba(100, 150, 255,' : 'rgba(0, 119, 204,';
+    
     for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * canvas.width,
@@ -34,13 +39,12 @@ export default function RegisterPage() {
     
     function drawParticles() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#0a0e17';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // No fillRect needed for background as it's handled by CSS gradient
       
       particles.forEach(particle => {
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(100, 150, 255, ${particle.opacity})`;
+        ctx.fillStyle = `${particleColor} ${particle.opacity})`;
         ctx.fill();
         
         particle.y -= particle.speed;
@@ -62,41 +66,41 @@ export default function RegisterPage() {
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [theme]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleRegister = async () => {
-  setLoading(true);
-  try {
-    const response = await axios.post(
-      "https://clouddoc-manager.onrender.com/api/auth/register",
-      form,
-      {
-        headers: { "Content-Type": "application/json" }
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        form,
+        {
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+      
+      if (response.data.success) {
+        setStep("otp");
+      } else {
+        alert(response.data.message || "Registration failed");
       }
-    );
-    
-    if (response.data.success) {
-      setStep("otp");
-    } else {
-      alert(response.data.message || "Registration failed");
+    } catch (error) {
+      if (error.response && error.response.data) {
+        alert(error.response.data.message || "Registration failed");
+      } else {
+        alert("Network error. Please try again.");
+      }
+      console.error("Registration error:", error);
     }
-  } catch (error) {
-    if (error.response && error.response.data) {
-      alert(error.response.data.message || "Registration failed");
-    } else {
-      alert("Network error. Please try again.");
-    }
-    console.error("Registration error:", error);
-  }
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
   const handleVerify = async () => {
     setLoading(true);
     try {
-      await axios.post("https://clouddoc-manager.onrender.com/api/auth/verify-register-otp", {
+      await axios.post("http://localhost:5000/api/auth/verify-register-otp", {
         email: form.email,
         otp
       });
@@ -242,8 +246,8 @@ export default function RegisterPage() {
         .auth-container {
           min-height: 100vh;
           width: 100%;
-          background: linear-gradient(135deg, #0a0e17 0%, #1a2639 100%);
-          color: #fff;
+          background: var(--bg-gradient);
+          color: var(--text-primary);
           position: relative;
           overflow: hidden;
           display: flex;
@@ -265,40 +269,42 @@ export default function RegisterPage() {
           position: absolute;
           width: 500px;
           height: 500px;
-          background: radial-gradient(circle, rgba(41, 128, 185, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+          background: radial-gradient(circle, var(--accent-glow) 0%, rgba(0, 0, 0, 0) 70%);
           top: -250px;
           right: -250px;
           z-index: 1;
+          opacity: 0.5;
         }
         
         .glow-effect-2 {
           position: absolute;
           width: 400px;
           height: 400px;
-          background: radial-gradient(circle, rgba(106, 176, 230, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+          background: radial-gradient(circle, var(--accent-glow) 0%, rgba(0, 0, 0, 0) 70%);
           bottom: -200px;
           left: -200px;
           z-index: 1;
+          opacity: 0.4;
         }
         
         .auth-card {
           position: relative;
           z-index: 2;
-          background: rgba(255, 255, 255, 0.00);
+          background: var(--card-bg);
           backdrop-filter: blur(60px);
           border-radius: 30px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid var(--border-color);
           padding: 30px;
           width: 100%;
           max-width: 450px;
-          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+          box-shadow: var(--shadow-lg);
           animation: fadeInUp 0.8s ease;
         }
         
         .back-home {
           display: inline-flex;
           align-items: center;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           text-decoration: none;
           font-size: 14px;
           margin-bottom: 20px;
@@ -306,7 +312,7 @@ export default function RegisterPage() {
         }
         
         .back-home:hover {
-          color: #4fc3f7;
+          color: var(--accent-color);
         }
         
         .back-home i {
@@ -320,7 +326,7 @@ export default function RegisterPage() {
         
         .logo-icon {
           font-size: 40px;
-          color: #4fc3f7;
+          color: var(--accent-color);
           margin-bottom: 15px;
         }
         
@@ -328,13 +334,13 @@ export default function RegisterPage() {
           font-size: 28px;
           font-weight: 600;
           margin-bottom: 10px;
-          background: linear-gradient(to right, #4fc3f7, #6ab0e6);
+          background: linear-gradient(to right, var(--accent-color), var(--accent-hover));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
         
         .auth-header p {
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           font-size: 14px;
         }
         
@@ -354,30 +360,30 @@ export default function RegisterPage() {
         .input-group i {
           position: absolute;
           left: 15px;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-muted);
           z-index: 2;
         }
         
         .auth-input {
           width: 100%;
           padding: 15px 15px 15px 45px;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: var(--input-bg);
+          border: 1px solid var(--border-color);
           border-radius: 30px;
-          color: #fff;
+          color: var(--text-primary);
           font-size: 15px;
           transition: all 0.3s ease;
         }
         
         .auth-input:focus {
           outline: none;
-          border-color: rgba(79, 195, 247, 0.5);
-          background: rgba(255, 255, 255, 0.12);
-          box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
+          border-color: var(--accent-color);
+          background: var(--input-bg);
+          box-shadow: 0 0 0 3px var(--accent-glow);
         }
         
         .auth-input::placeholder {
-          color: rgba(255, 255, 255, 0.5);
+          color: var(--text-muted);
         }
         
         .auth-btn {
@@ -387,8 +393,8 @@ export default function RegisterPage() {
           padding: 15px;
           border-radius: 30px;
           border: none;
-          background: linear-gradient(45deg, #4fc3f7, #6ab0e6);
-          color: #0a0e17;
+          background: linear-gradient(45deg, var(--accent-color), var(--accent-hover));
+          color: #fff;
           font-weight: 600;
           font-size: 16px;
           cursor: pointer;
@@ -398,7 +404,7 @@ export default function RegisterPage() {
         
         .auth-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 10px 25px rgba(79, 195, 247, 0.4);
+          box-shadow: 0 10px 25px var(--accent-glow);
         }
         
         .auth-btn:disabled {
@@ -425,12 +431,12 @@ export default function RegisterPage() {
         
         .otp-instructions i {
           font-size: 40px;
-          color: #4fc3f7;
+          color: var(--accent-color);
           margin-bottom: 15px;
         }
         
         .otp-instructions p {
-          color: rgba(255, 255, 255, 0.8);
+          color: var(--text-secondary);
           font-size: 14px;
           line-height: 1.5;
         }
@@ -441,31 +447,31 @@ export default function RegisterPage() {
         }
         
         .resend-otp p {
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           font-size: 14px;
         }
         
         .text-btn {
           background: none;
           border: none;
-          color: #4fc3f7;
+          color: var(--accent-color);
           cursor: pointer;
           text-decoration: underline;
         }
         
         .auth-footer {
           text-align: center;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          border-top: 1px solid var(--border-color);
           padding-top: 20px;
         }
         
         .auth-footer p {
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           font-size: 14px;
         }
         
         .auth-link {
-          color: #4fc3f7;
+          color: var(--accent-color);
           text-decoration: none;
           font-weight: 500;
         }

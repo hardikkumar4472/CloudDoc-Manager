@@ -151,17 +151,19 @@ export default function ShareModal({ file, onClose, onShare, onRevoke }) {
             justify-content: center;
             z-index: 1000;
             padding: 20px;
+            backdrop-filter: blur(5px);
           }
           
           .modal {
-            background: rgba(255, 255, 255, 0);
+            background: var(--bg-secondary);
             backdrop-filter: blur(40px);
             border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--border-color);
             width: 100%;
             max-width: 500px;
             max-height: 80vh;
             overflow-y: auto;
+            box-shadow: var(--shadow-lg);
           }
           
           .modal-header {
@@ -169,21 +171,26 @@ export default function ShareModal({ file, onClose, onShare, onRevoke }) {
             justify-content: space-between;
             align-items: center;
             padding: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--border-color);
           }
           
           .modal-header h3 {
             margin: 0;
-            color: #4fc3f7;
+            color: var(--accent-color);
           }
           
           .close-btn {
             background: none;
             border: none;
-            color: #fff;
+            color: var(--text-secondary);
             font-size: 18px;
             cursor: pointer;
             padding: 5px;
+            transition: all 0.3s ease;
+          }
+          
+          .close-btn:hover {
+            color: var(--text-primary);
           }
           
           .modal-content {
@@ -208,16 +215,16 @@ export default function ShareModal({ file, onClose, onShare, onRevoke }) {
           .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--text-secondary);
           }
           
           .form-select {
             width: 100%;
             padding: 10px;
-            background: rgba(0, 0, 0, 0);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
             border-radius: 2px;
-            color: #fff;
+            color: var(--text-primary);
             appearance: none;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
             background-repeat: no-repeat;
@@ -225,11 +232,14 @@ export default function ShareModal({ file, onClose, onShare, onRevoke }) {
             background-size: 16px;
           }
           
+          [data-theme='light'] .form-select {
+             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+          }
+          
           .form-select option {
-            background: #000000;
-            color: #fff;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             padding: 10px;
-            
           }
           
           .btn {
@@ -245,19 +255,25 @@ export default function ShareModal({ file, onClose, onShare, onRevoke }) {
           }
           
           .btn-primary {
-            background: linear-gradient(45deg, #4fc3f7, #6ab0e6);
-            color: #030303ff;
+            background: linear-gradient(45deg, var(--accent-color), var(--accent-hover));
+            color: white;
+            box-shadow: 0 4px 15px var(--accent-glow);
           }
           
           .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(79, 195, 247, 0.4);
+            box-shadow: 0 8px 20px var(--accent-glow);
           }
           
           .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+          }
+          
+          .btn-secondary:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
           }
           
           .btn-danger {
@@ -279,14 +295,14 @@ export default function ShareModal({ file, onClose, onShare, onRevoke }) {
           .url-input {
             flex: 1;
             padding: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
             border-radius: 40px;
-            color: #fff;
+            color: var(--text-primary);
           }
           
           .expiry-info {
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--text-secondary);
             font-size: 14px;
             margin-bottom: 20px;
           }
@@ -299,6 +315,12 @@ export default function ShareModal({ file, onClose, onShare, onRevoke }) {
           .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            box-shadow: none;
+          }
+          
+          .share-options h4, .share-result h4 {
+            color: var(--accent-hover);
+            margin-bottom: 15px;
           }
         `}</style>
       </div>

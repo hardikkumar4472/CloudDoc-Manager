@@ -10,6 +10,7 @@ import ShareModal from "./components/ShareModal";
 import DownloadImageAsPDF from "./components/DownloadImageasPDF";
 import EmailModal from "./components/EmailModal";
 import CompressModal from "./components/CompressModal";
+import CropModal from "./components/CropModal";
 
 export default function DashboardPage() {
   const [files, setFiles] = useState([]);
@@ -28,10 +29,12 @@ export default function DashboardPage() {
   const [showPdfDownload, setShowPdfDownload] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showCompressModal, setShowCompressModal] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
   const [sharingFile, setSharingFile] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   const [emailFile, setEmailFile] = useState(null);
   const [compressFile, setCompressFile] = useState(null);
+  const [cropFile, setCropFile] = useState(null);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
@@ -44,9 +47,14 @@ export default function DashboardPage() {
     fetchUserProfile();
   }, [navigate, token]);
 
-  const fetchFiles = async () => {
+  const fetchFiles = async (filter = activeFilter) => {
     try {
-      const res = await axios.get("https://clouddoc-manager.onrender.com/api/docs", {
+      let url = "http://localhost:5000/api/docs";
+      if (filter === 'vault') {
+          url += "?vault=true";
+      }
+      
+      const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const sortedFiles = res.data.sort((a, b) => {
@@ -60,9 +68,18 @@ export default function DashboardPage() {
     }
   };
 
+  useEffect(() => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    fetchFiles(activeFilter);
+    fetchUserProfile();
+  }, [navigate, token, activeFilter]);
+
   const fetchUserProfile = async () => {
     try {
-      const res = await axios.get("https://clouddoc-manager.onrender.com/api/auth/profile", {
+      const res = await axios.get("http://localhost:5000/api/auth/profile", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(res.data);
@@ -79,7 +96,7 @@ export default function DashboardPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      await axios.post("https://clouddoc-manager.onrender.com/api/docs/upload", formData, {
+      await axios.post("http://localhost:5000/api/docs/upload", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -103,7 +120,7 @@ export default function DashboardPage() {
       const formData = new FormData();
       formData.append("file", versionFile);
 
-      await axios.post(`https://clouddoc-manager.onrender.com/api/docs/${selectedFile._id}/version`, formData, {
+      await axios.post(`http://localhost:5000/api/docs/${selectedFile._id}/version`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -123,7 +140,7 @@ export default function DashboardPage() {
   const handleShareFile = async (fileId, expiresIn) => {
     try {
       const response = await axios.post(
-        `https://clouddoc-manager.onrender.com/api/docs/share/${fileId}`,
+        `http://localhost:5000/api/docs/share/${fileId}`,
         { expiresIn },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -137,7 +154,7 @@ export default function DashboardPage() {
   const handleRevokeShare = async (fileId) => {
     try {
       await axios.post(
-        `https://clouddoc-manager.onrender.com/api/docs/share/revoke/${fileId}`,
+        `http://localhost:5000/api/docs/share/revoke/${fileId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -151,7 +168,7 @@ export default function DashboardPage() {
   const handleSendEmail = async (fileId, emailData) => {
     try {
       const response = await axios.post(
-        `https://clouddoc-manager.onrender.com/api/docs/${fileId}/send-email`,
+        `http://localhost:5000/api/docs/${fileId}/send-email`,
         emailData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -166,7 +183,7 @@ export default function DashboardPage() {
   const handleCompressPDF = async (fileId, level) => {
     try {
       const response = await axios.get(
-        `https://clouddoc-manager.onrender.com/api/docs/compress/${fileId}?level=${level}`,
+        `http://localhost:5000/api/docs/compress/${fileId}?level=${level}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -191,7 +208,7 @@ export default function DashboardPage() {
   const handleDelete = async (id) => {
     setDeletingId(id);
     try {
-      await axios.delete(`https://clouddoc-manager.onrender.com/api/docs/${id}`, {
+      await axios.delete(`http://localhost:5000/api/docs/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
@@ -205,7 +222,7 @@ export default function DashboardPage() {
   const handleToggleFavorite = async (id) => {
     setTogglingId(id);
     try {
-      await axios.patch(`https://clouddoc-manager.onrender.com/api/docs/${id}/favorite`, {}, {
+      await axios.patch(`http://localhost:5000/api/docs/${id}/favorite`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
@@ -219,7 +236,7 @@ export default function DashboardPage() {
   const handleTogglePin = async (id) => {
     setTogglingId(id);
     try {
-      await axios.patch(`https://clouddoc-manager.onrender.com/api/docs/${id}/pin`, {}, {
+      await axios.patch(`http://localhost:5000/api/docs/${id}/pin`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
@@ -232,7 +249,7 @@ export default function DashboardPage() {
 
   const handleRestoreVersion = async (fileId, versionNumber) => {
     try {
-      await axios.post(`https://clouddoc-manager.onrender.com/api/docs/${fileId}/restore/${versionNumber}`, {}, {
+      await axios.post(`http://localhost:5000/api/docs/${fileId}/restore/${versionNumber}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowVersions(false);
@@ -245,7 +262,7 @@ export default function DashboardPage() {
 
   const handleRename = async (id, newName) => {
     try {
-      await axios.put(`https://clouddoc-manager.onrender.com/api/docs/rename/${id}`, 
+      await axios.put(`http://localhost:5000/api/docs/rename/${id}`, 
         { newName },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -266,7 +283,7 @@ export default function DashboardPage() {
       if (quality) params.append('quality', quality);
       
       const response = await axios.get(
-        `https://clouddoc-manager.onrender.com/api/docs/download/${fileId}/resize?${params.toString()}`,
+        `http://localhost:5000/api/docs/download/${fileId}/resize?${params.toString()}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -295,7 +312,7 @@ export default function DashboardPage() {
     }
     
     try {
-      const res = await axios.get(`https://clouddoc-manager.onrender.com/api/docs/search?query=${encodeURIComponent(query)}`, {
+      const res = await axios.get(`http://localhost:5000/api/docs/search?query=${encodeURIComponent(query)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFiles(res.data);
@@ -404,6 +421,113 @@ export default function DashboardPage() {
     return true;
   });
 
+  const handleToggleVault = async (id) => {
+    try {
+      await axios.patch(`http://localhost:5000/api/docs/${id}/vault`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchFiles(activeFilter);
+    } catch (error) {
+      console.error("Vault toggle error:", error);
+      alert("Failed to update vault status.");
+    }
+  };
+
+  const handleSetExpiry = async (id) => {
+      const hours = prompt("Enter expiry hours (0 to remove):", "24");
+      if (hours === null) return;
+      try {
+          await axios.patch(`http://localhost:5000/api/docs/${id}/expiry`, { hours: parseInt(hours) }, {
+             headers: { Authorization: `Bearer ${token}` }
+          });
+          fetchFiles(activeFilter);
+          alert("Expiry updated");
+      } catch (error) {
+          alert("Failed to set expiry");
+      }
+  };
+
+  const handleWatermark = async (id) => {
+      const text = prompt("Enter watermark text:", "CONFIDENTIAL");
+      if (!text) return;
+      try {
+          const response = await axios.post(`http://localhost:5000/api/docs/watermark/${id}`, { text }, {
+              headers: { Authorization: `Bearer ${token}` },
+              responseType: 'blob'
+          });
+          // Auto download
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `watermarked-doc`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+      } catch (error) {
+          alert("Failed to watermark");
+      }
+  };
+
+  const handleConvertImage = async (id) => {
+      const format = prompt("Enter format (webp, png, jpeg):", "webp");
+      if (!format) return;
+      try {
+          const response = await axios.post(`http://localhost:5000/api/docs/convert/${id}`, { format }, {
+              headers: { Authorization: `Bearer ${token}` },
+              responseType: 'blob'
+          });
+           const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `converted.${format}`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+      } catch (error) {
+          alert("Failed to convert");
+      }
+  };
+
+  // Placeholders for complex UI modals (Split/Crop/Merge)
+  const handleSplitPDF = (file) => alert("Split PDF feature coming soon (UI pending)");
+  const handleMergePDFs = (fileIds) => alert("Merge PDF feature coming soon (UI pending)");
+
+  const handleCropImage = (fileId) => {
+      // Find full file object to get URL
+      const fileToCrop = files.find(f => f._id === fileId);
+      if (fileToCrop) {
+          setCropFile(fileToCrop);
+          setShowCropModal(true);
+      }
+  };
+
+  const handleConfirmCrop = async (id, width, height, left, top) => {
+      try {
+          const response = await axios.post(`http://localhost:5000/api/docs/crop/${id}`, 
+            { width: parseInt(width), height: parseInt(height), left: parseInt(left), top: parseInt(top) }, 
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              responseType: 'blob'
+            }
+          );
+           
+          // Auto download cropped image
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `cropped-${cropFile.filename}`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          
+          setShowCropModal(false);
+          setCropFile(null);
+      } catch (error) {
+          console.error("Crop error:", error);
+          alert("Failed to crop image. Ensure crop is within bounds.");
+      }
+  };
+
   return (
     <div className="dashboard-container">
       <Header user={user} handleLogout={handleLogout} />
@@ -441,6 +565,14 @@ export default function DashboardPage() {
           onDownloadAsPdf={onDownloadAsPdf}
           onSendEmail={onSendEmail}
           onCompressPDF={onCompressPDF}
+          
+          // New Features
+          onToggleVault={handleToggleVault}
+          onSetExpiry={handleSetExpiry}
+          onWatermark={handleWatermark}
+          onConvertImage={handleConvertImage}
+          onSplitPDF={handleSplitPDF}
+          onCropImage={handleCropImage}
         />
 
         {showVersions && selectedFile && (
@@ -507,6 +639,17 @@ export default function DashboardPage() {
             onCompress={handleCompressPDF}
           />
         )}
+        
+        {showCropModal && cropFile && (
+            <CropModal
+                file={cropFile}
+                onClose={() => {
+                    setShowCropModal(false);
+                    setCropFile(null);
+                }}
+                onCrop={handleConfirmCrop}
+            />
+        )}
       </div>
 
       <style>{`
@@ -530,11 +673,12 @@ export default function DashboardPage() {
         
         .dashboard-container {
           min-height: 100vh;
-          background: linear-gradient(135deg, #000000ff 0%, #0a0f17ff 100%);
-          color: #fff;
+          background: var(--bg-gradient);
+          color: var(--text-primary);
           width: 100%;
           margin: 0;
           padding: 0;
+          transition: background 0.5s ease;
         }
         
         .dashboard-content {

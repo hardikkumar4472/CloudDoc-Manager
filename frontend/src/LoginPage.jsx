@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import { useTheme } from "./context/ThemeContext";
 
 export default function LoginPage() {
-  const [step, setStep] = useState("login");
   const [form, setForm] = useState({ email: "", password: "" });
-  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [resetStep, setResetStep] = useState(1);
@@ -14,6 +13,7 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState("");
   const [showResetModal, setShowResetModal] = useState(false);
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   // Background particle effect
   useEffect(() => {
@@ -27,6 +27,8 @@ export default function LoginPage() {
     const particles = [];
     const particleCount = 80;
     
+    const particleColor = theme === 'dark' ? 'rgba(100, 150, 255,' : 'rgba(0, 119, 204,';
+    
     for (let i = 0; i < particleCount; i++) {
       particles.push({
         x: Math.random() * canvas.width,
@@ -39,13 +41,11 @@ export default function LoginPage() {
     
     function drawParticles() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#0a0e17';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       particles.forEach(particle => {
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(100, 150, 255, ${particle.opacity})`;
+        ctx.fillStyle = `${particleColor} ${particle.opacity})`;
         ctx.fill();
         
         particle.y -= particle.speed;
@@ -67,7 +67,7 @@ export default function LoginPage() {
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [theme]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -75,29 +75,12 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
     try {
-      await axios.post("https://clouddoc-manager.onrender.com/api/auth/login", form);
-      setStep("otp");
-      setMessage("OTP sent to your email");
-    } catch (error) {
-      setMessage(error.response?.data?.message || "Verification failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerify = async () => {
-    setIsLoading(true);
-    setMessage("");
-    try {
-      const res = await axios.post("https://clouddoc-manager.onrender.com/api/auth/verify-login-otp", {
-        email: form.email,
-        otp
-      });
+      const res = await axios.post("http://localhost:5000/api/auth/login", form);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/dashboard");
     } catch (error) {
-      setMessage(error.response?.data?.message || "Verification failed");
+      setMessage(error.response?.data?.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -105,11 +88,7 @@ export default function LoginPage() {
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      if (step === "login") {
-        handleLogin();
-      } else {
-        handleVerify();
-      }
+      handleLogin();
     }
   };
 
@@ -119,7 +98,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
     try {
-      const res = await axios.post("https://clouddoc-manager.onrender.com/api/auth/request-reset", {
+      const res = await axios.post("http://localhost:5000/api/auth/request-reset", {
         email: resetEmail,
       });
       setMessage(res.data.msg);
@@ -136,7 +115,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
     try {
-      const res = await axios.post("https://clouddoc-manager.onrender.com/api/auth/reset-password", {
+      const res = await axios.post("http://localhost:5000/api/auth/reset-password", {
         email: resetEmail,
         otp: resetOtp,
         newPassword,
@@ -194,11 +173,9 @@ export default function LoginPage() {
             <h1>CloudDoc<span>Manager</span></h1>
           </div>
           
-          <h2>{step === "login" ? "Welcome Back" : "Verify Your Identity"}</h2>
+          <h2>Welcome Back</h2>
           <p className="login-subtitle">
-            {step === "login" 
-              ? "Sign in to access your secure documents" 
-              : "Enter the OTP sent to your email to continue"}
+            Sign in to access your secure documents
           </p>
           
           {message && (
@@ -208,84 +185,45 @@ export default function LoginPage() {
             </div>
           )}
           
-          {step === "login" ? (
-            <div className="login-form">
-              <div className="input-group">
-                <i className="fas fa-envelope input-icon"></i>
-                <input 
-                  type="email" 
-                  name="email" 
-                  placeholder="Email Address" 
-                  onChange={handleChange}
-                  onKeyPress={handleKeyPress}
-                  className="auth-input"
-                />
-              </div>
-              
-              <div className="input-group">
-                <i className="fas fa-lock input-icon"></i>
-                <input 
-                  type="password" 
-                  name="password" 
-                  placeholder="Password" 
-                  onChange={handleChange}
-                  onKeyPress={handleKeyPress}
-                  className="auth-input"
-                />
-              </div>
-              
-              <button 
-                onClick={handleLogin} 
-                disabled={isLoading}
-                className="auth-button login-btn"
-              >
-                {isLoading ? <i className="fas fa-spinner fa-spin"></i> : "Continue"}
-                {!isLoading && <i className="fas fa-arrow-right"></i>}
-              </button>
-              
-              <div className="auth-links">
-                <a href="#" onClick={openResetModal} className="forgot-link">Forgot password?</a>
-                <p>Don't have an account? <Link to="/register" className="auth-link">Sign up</Link></p>
-              </div>
+          <div className="login-form">
+            <div className="input-group">
+              <i className="fas fa-envelope input-icon"></i>
+              <input 
+                type="email" 
+                name="email" 
+                placeholder="Email Address" 
+                onChange={handleChange}
+                onKeyPress={handleKeyPress}
+                className="auth-input"
+              />
             </div>
-          ) : (
-            <div className="otp-form">
-              <div className="otp-instructions">
-                <i className="fas fa-envelope-open-text"></i>
-                <p>We've sent a 6-digit code to <strong>{form.email}</strong>. The code expires shortly, so please enter it soon.</p>
-              </div>
-              
-              <div className="input-group otp-input-group">
-                <input 
-                  type="text" 
-                  value={otp} 
-                  onChange={(e) => setOtp(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Enter 6-digit code"
-                  className="auth-input otp-input"
-                  maxLength="6"
-                />
-              </div>
-              
-              <button 
-                onClick={handleVerify} 
-                disabled={isLoading || otp.length < 6}
-                className="auth-button verify-btn"
-              >
-                {isLoading ? <i className="fas fa-spinner fa-spin"></i> : "Verify & Continue"}
-                {!isLoading && <i className="fas fa-shield-check"></i>}
-              </button>
-              
-              <div className="otp-actions">
-                <button 
-                  className="resend-btn"
-                  onClick={() => setStep("login")}
-                >
-                  <i className="fas fa-edit"></i> Change Email
-                </button>
-              </div>
+            
+            <div className="input-group">
+              <i className="fas fa-lock input-icon"></i>
+              <input 
+                type="password" 
+                name="password" 
+                placeholder="Password" 
+                onChange={handleChange}
+                onKeyPress={handleKeyPress}
+                className="auth-input"
+              />
             </div>
-          )}
+            
+            <button 
+              onClick={handleLogin} 
+              disabled={isLoading}
+              className="auth-button login-btn"
+            >
+              {isLoading ? <i className="fas fa-spinner fa-spin"></i> : "Sign In"}
+              {!isLoading && <i className="fas fa-arrow-right"></i>}
+            </button>
+            
+            <div className="auth-links">
+              <a href="#" onClick={openResetModal} className="forgot-link">Forgot password?</a>
+              <p>Don't have an account? <Link to="/register" className="auth-link">Sign up</Link></p>
+            </div>
+          </div>
           
           <div className="security-badge">
             <i className="fas fa-shield-alt"></i>
@@ -412,8 +350,8 @@ export default function LoginPage() {
         .login-container {
           min-height: 100vh;
           width: 100%;
-          background: linear-gradient(135deg, #0a0e17 0%, #1a2639 100%);
-          color: #fff;
+          background: var(--bg-gradient);
+          color: var(--text-primary);
           position: relative;
           overflow: hidden;
           display: flex;
@@ -435,10 +373,11 @@ export default function LoginPage() {
           position: fixed;
           width: 500px;
           height: 500px;
-          background: radial-gradient(circle, rgba(41, 128, 185, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+          background: radial-gradient(circle, var(--accent-glow) 0%, rgba(0, 0, 0, 0) 70%);
           top: -250px;
           right: -250px;
           z-index: 1;
+          opacity: 0.5;
         }
         
         .login-content-wrapper {
@@ -458,7 +397,7 @@ export default function LoginPage() {
           position: absolute;
           top: 80px;
           left: 40px;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           text-decoration: none;
           display: flex;
           align-items: center;
@@ -468,18 +407,18 @@ export default function LoginPage() {
         }
         
         .back-home:hover {
-          color: #4fc3f7;
+          color: var(--accent-color);
           transform: translateX(-5px);
         }
         
         .login-card {
-          background: rgba(15, 23, 42, 0.00);
+          background: var(--card-bg);
           backdrop-filter: blur(60px);
           border-radius: 20px;
           padding: 40px;
           width: 100%;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+          border: 1px solid var(--border-color);
+          box-shadow: var(--shadow-lg);
           animation: fadeInUp 0.8s ease;
         }
         
@@ -490,14 +429,14 @@ export default function LoginPage() {
         
         .logo-icon {
           font-size: 40px;
-          color: #4fc3f7;
+          color: var(--accent-color);
           margin-bottom: 10px;
         }
         
         .logo h1 {
           font-size: 28px;
           font-weight: 700;
-          background: linear-gradient(to right, #4fc3f7, #6ab0e6, #a174db);
+          background: linear-gradient(to right, var(--accent-color), var(--accent-hover));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           letter-spacing: 1px;
@@ -508,11 +447,12 @@ export default function LoginPage() {
           font-weight: 600;
           text-align: center;
           margin-bottom: 10px;
+          color: var(--text-primary);
         }
         
         .login-subtitle {
           text-align: center;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           margin-bottom: 30px;
           font-size: 14px;
         }
@@ -550,7 +490,7 @@ export default function LoginPage() {
           left: 15px;
           top: 50%;
           transform: translateY(-50%);
-          color: rgba(255, 255, 255, 0.5);
+          color: var(--text-muted);
           z-index: 2;
         }
         
@@ -558,34 +498,26 @@ export default function LoginPage() {
           width: 100%;
           padding: 15px 15px 15px 45px;
           border-radius: 40px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          background: rgba(255, 255, 255, 0.05);
-          color: #fff;
+          border: 1px solid var(--border-color);
+          background: var(--input-bg);
+          color: var(--text-primary);
           font-size: 14px;
           transition: all 0.3s ease;
         }
         
         .auth-input:focus {
           outline: none;
-          border-color: rgba(79, 195, 247, 0.5);
-          box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
-          background: rgba(255, 255, 255, 0.08);
+          border-color: var(--accent-color);
+          box-shadow: 0 0 0 3px var(--accent-glow);
+          background: var(--input-bg);
         }
         
         .auth-input:hover {
-          border-color: rgba(255, 255, 255, 0.2);
+          border-color: var(--accent-hover);
         }
         
         .auth-input::placeholder {
-          color: rgba(255, 255, 255, 0.4);
-        }
-        
-        .otp-input {
-          text-align: center;
-          letter-spacing: 8px;
-          font-size: 18px;
-          font-weight: 600;
-          padding: 15px;
+          color: var(--text-muted);
         }
         
         .auth-button {
@@ -614,27 +546,15 @@ export default function LoginPage() {
         }
         
         .login-btn {
-          background: linear-gradient(45deg, #4fc3f7, #6ab0e6);
-          color: #0a0e17;
+          background: linear-gradient(45deg, var(--accent-color), var(--accent-hover));
+          color: #fff;
           font-weight: 600;
-          box-shadow: 0 4px 15px rgba(79, 195, 247, 0.3);
+          box-shadow: 0 4px 15px var(--accent-glow);
         }
         
         .login-btn:not(:disabled):hover {
-          box-shadow: 0 8px 25px rgba(79, 195, 247, 0.4);
-          background: linear-gradient(45deg, #6ab0e6, #4fc3f7);
-        }
-        
-        .verify-btn {
-          background: linear-gradient(45deg, #10b981, #059669);
-          color: white;
-          font-weight: 600;
-          box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-        }
-        
-        .verify-btn:not(:disabled):hover {
-          box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-          background: linear-gradient(45deg, #059669, #10b981);
+          box-shadow: 0 8px 25px var(--accent-glow);
+          background: linear-gradient(45deg, var(--accent-hover), var(--accent-color));
         }
         
         .auth-links {
@@ -643,7 +563,7 @@ export default function LoginPage() {
         }
         
         .forgot-link {
-          color: #4fc3f7;
+          color: var(--accent-color);
           text-decoration: none;
           font-size: 14px;
           display: block;
@@ -653,96 +573,48 @@ export default function LoginPage() {
         }
         
         .forgot-link:hover {
-          color: #6ab0e6;
+          color: var(--accent-hover);
           text-decoration: underline;
         }
         
         .auth-links p {
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           font-size: 14px;
         }
         
         .auth-link {
-          color: #4fc3f7;
+          color: var(--accent-color);
           text-decoration: none;
           font-weight: 500;
           transition: all 0.3s ease;
         }
         
         .auth-link:hover {
-          color: #6ab0e6;
+          color: var(--accent-hover);
           text-decoration: underline;
-        }
-        
-        .otp-instructions {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 12px;
-          padding: 15px;
-          margin-bottom: 20px;
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-        }
-        
-        .otp-instructions i {
-          color: #4fc3f7;
-          font-size: 18px;
-          margin-top: 2px;
-        }
-        
-        .otp-instructions p {
-          font-size: 14px;
-          color: rgba(255, 255, 255, 0.8);
-          line-height: 1.5;
-        }
-        
-        .otp-actions {
-          display: flex;
-          justify-content: space-between;
-          gap: 10px;
-        }
-        
-        .resend-btn {
-          background: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.7);
-          padding: 10px 15px;
-          border-radius: 40px;
-          font-size: 13px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          transition: all 0.3s ease;
-        }
-        
-        .resend-btn:hover {
-          background: rgba(255, 255, 255, 0.05);
-          color: #4fc3f7;
-          border-color: rgba(79, 195, 247, 0.3);
         }
         
         .security-badge {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255, 255, 255, 0.03);
+          background: var(--card-bg);
           backdrop-filter: blur(10px);
           padding: 15px;
           border-radius: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border-color);
           margin-top: 30px;
           gap: 10px;
         }
         
         .security-badge i {
-          color: #4fc3f7;
+          color: var(--accent-color);
           font-size: 16px;
         }
         
         .security-badge p {
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.6);
+          color: var(--text-secondary);
         }
         
         /* Modal Styles */
@@ -761,15 +633,19 @@ export default function LoginPage() {
           padding: 20px;
         }
         
+        [data-theme='light'] .modal-overlay {
+          background: rgba(255, 255, 255, 0.6);
+        }
+        
         .reset-modal {
-          background: rgba(15, 23, 42, 0.95);
+          background: var(--bg-secondary);
           backdrop-filter: blur(20px);
           border-radius: 20px;
           padding: 30px;
           width: 100%;
           max-width: 450px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+          border: 1px solid var(--border-color);
+          box-shadow: var(--shadow-lg);
           animation: modalSlideIn 0.3s ease;
         }
         
@@ -781,7 +657,7 @@ export default function LoginPage() {
         }
         
         .modal-header h2 {
-          color: #4fc3f7;
+          color: var(--accent-color);
           font-weight: 600;
           font-size: 24px;
         }
@@ -789,40 +665,40 @@ export default function LoginPage() {
         .modal-close {
           background: transparent;
           border: none;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           font-size: 20px;
           cursor: pointer;
           transition: all 0.3s ease;
         }
         
         .modal-close:hover {
-          color: #4fc3f7;
+          color: var(--text-primary);
           transform: rotate(90deg);
         }
         
         .reset-subtitle {
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 14px;
+          color: var(--text-secondary);
           margin-bottom: 20px;
-          text-align: center;
+          font-size: 14px;
         }
         
         .reset-form {
           display: flex;
           flex-direction: column;
-          gap: 15px;
         }
         
         .reset-btn {
-          background: linear-gradient(45deg, #4fc3f7, #6ab0e6);
-          color: white;
+          margin-top: 10px;
+          margin-bottom: 0;
+          background: linear-gradient(45deg, var(--accent-color), var(--accent-hover));
+          color: #fff;
           font-weight: 600;
-          box-shadow: 0 4px 15px rgba(79, 195, 247, 0.3);
+          box-shadow: 0 4px 15px var(--accent-glow);
         }
         
         .reset-btn:not(:disabled):hover {
-          box-shadow: 0 8px 25px rgba(79, 195, 247, 0.4);
-          background: linear-gradient(45deg, #6ab0e6, #4fc3f7);
+          background: linear-gradient(45deg, var(--accent-hover), var(--accent-color));
+          box-shadow: 0 8px 25px var(--accent-glow);
         }
         
         @keyframes fadeInUp {
@@ -848,57 +724,33 @@ export default function LoginPage() {
         @keyframes modalSlideIn {
           from {
             opacity: 0;
-            transform: translateY(-20px) scale(0.95);
+            transform: scale(0.95);
           }
           to {
             opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        
-        @media (max-width: 768px) {
-          .login-content-wrapper {
-            padding: 15px;
-          }
-          
-          .login-card {
-            padding: 30px 25px;
-          }
-          
-          .back-home {
-            top: 15px;
-            left: 15px;
-          }
-          
-          .otp-actions {
-            flex-direction: column;
-            gap: 10px;
-          }
-          
-          .resend-btn {
-            justify-content: center;
-          }
-          
-          .reset-modal {
-            padding: 25px 20px;
+            transform: scale(1);
           }
         }
         
         @media (max-width: 480px) {
+          .back-home {
+            top: 20px;
+            left: 20px;
+          }
+          
+          .login-card {
+            padding: 30px 20px;
+          }
+          
+          .logo-icon {
+            font-size: 32px;
+          }
+          
           .logo h1 {
             font-size: 24px;
           }
           
           .login-card h2 {
-            font-size: 20px;
-          }
-          
-          .security-badge {
-            flex-direction: column;
-            text-align: center;
-          }
-          
-          .modal-header h2 {
             font-size: 20px;
           }
         }
