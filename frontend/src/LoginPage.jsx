@@ -13,6 +13,12 @@ export default function LoginPage() {
   const [resetOtp, setResetOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showResetModal, setShowResetModal] = useState(false);
+  
+  // 2FA States
+  const [show2faModal, setShow2faModal] = useState(false);
+  const [twoFactorOtp, setTwoFactorOtp] = useState("");
+  const [pendingUserId, setPendingUserId] = useState(null);
+
   const navigate = useNavigate();
   const { theme } = useTheme();
 
@@ -48,13 +54,40 @@ export default function LoginPage() {
     setMessage("");
     try {
       const res = await axios.post(`${API_URL}/api/auth/login`, form);
+      
+      if (res.data.twoFactorRequired) {
+          setPendingUserId(res.data.userId);
+          setShow2faModal(true);
+          setIsLoading(false);
+          return;
+      }
+
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/dashboard");
     } catch (error) {
-      setMessage(error.response?.data?.message || "Login failed");
+      setMessage(error.response?.data?.msg || "Login failed");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handle2FALogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage("");
+    try {
+        const res = await axios.post(`${API_URL}/api/auth/login-2fa`, {
+            userId: pendingUserId,
+            token: twoFactorOtp
+        });
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        navigate("/dashboard");
+    } catch (error) {
+        setMessage(error.response?.data?.msg || "Invalid 2FA code");
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -311,7 +344,58 @@ export default function LoginPage() {
         </div>
       )}
 
+      {/* 2FA Modal */}
+      {show2faModal && (
+        <div className="modal-overlay">
+          <div className="reset-modal">
+            <div className="modal-header">
+              <h2>Security Check</h2>
+              <button className="modal-close" onClick={() => setShow2faModal(false)}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <p className="reset-subtitle">
+                Two-Factor Authentication is enabled. Please enter the 6-digit code from your authenticator app.
+              </p>
+              
+              <form onSubmit={handle2FALogin} className="reset-form">
+                <div className="input-group">
+                  <i className="fas fa-shield-alt input-icon"></i>
+                  <input
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={twoFactorOtp}
+                    onChange={(e) => setTwoFactorOtp(e.target.value)}
+                    required
+                    maxLength="6"
+                    className="auth-input otp-field-v2"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="auth-button login-btn"
+                  disabled={isLoading}
+                >
+                  {isLoading ? <i className="fas fa-spinner fa-spin"></i> : "Verify & Sign In"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
+        .otp-field-v2 {
+            font-family: monospace;
+            font-size: 1.5rem !important;
+            letter-spacing: 0.5em;
+            text-align: center;
+            font-weight: 800;
+        }
+
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css');
         * {

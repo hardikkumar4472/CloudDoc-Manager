@@ -19,6 +19,8 @@ import WatermarkModal from "./components/WatermarkModal";
 import FileExpiryModal from "./components/FileExpiryModal";
 import ImageConvertModal from "./components/ImageConvertModal";
 
+import AuditLogModal from "./components/AuditLogModal";
+import SignModal from "./components/SignModal";
 import { useToast } from "./context/ToastContext";
 
 export default function DashboardPage() {
@@ -58,11 +60,17 @@ export default function DashboardPage() {
   const [showConvertModal, setShowConvertModal] = useState(false);
 
   const [selectedFileIds, setSelectedFileIds] = useState([]);
+  const [viewMode, setViewMode] = useState('grid');
+  const [storageStats, setStorageStats] = useState({ used: 0, limit: 5 * 1024 * 1024 * 1024, count: 0 });
   
   // Vault Logic
   const [showPinModal, setShowPinModal] = useState(false);
   const [hasPin, setHasPin] = useState(false);
   const [pinMode, setPinMode] = useState("verify");
+
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [showSignModal, setShowSignModal] = useState(false);
+  const [signingFile, setSigningFile] = useState(null);
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -74,14 +82,29 @@ export default function DashboardPage() {
     }
     fetchFiles();
     fetchUserProfile();
+    fetchStorageStats();
   }, [navigate, token]);
+
+  const fetchStorageStats = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/docs/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setStorageStats(res.data);
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
 
   const fetchFiles = async (filter = activeFilter) => {
     try {
       let url = `${API_URL}/api/docs`;
       if (filter === 'vault') {
           url += "?vault=true";
+      } else if (filter === 'trash') {
+          url += "?trash=true";
       }
+      
       
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
@@ -146,6 +169,7 @@ export default function DashboardPage() {
       setFile(null);
       document.getElementById("file-input").value = "";
       fetchFiles();
+      fetchStorageStats();
     } catch (error) {
       console.error("Upload error:", error);
       addToast("Upload failed. Please try again.", 'error');
@@ -254,18 +278,88 @@ export default function DashboardPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
+    // If not in trash view, move to trash. If in trash view, ignore (Delete permanent handles it).
+    if (activeFilter === 'trash') return;
+    
+    if (!window.confirm("Move this document to Recycle Bin?")) return;
     setDeletingId(id);
     try {
-      await axios.delete(`${API_URL}/api/docs/${id}`, {
+      await axios.patch(`${API_URL}/api/docs/${id}/trash`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
+      addToast("Moved to Recycle Bin", "success");
     } catch (error) {
-      console.error("Delete error:", error);
-      addToast("Delete failed. Please try again.", 'error');
+      console.error("Trash error:", error);
+      addToast("Failed to move to trash.", 'error');
     }
     setDeletingId(null);
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      await axios.patch(`${API_URL}/api/docs/${id}/restore`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchFiles(activeFilter);
+      addToast("Document restored", "success");
+    } catch (error) {
+      addToast("Failed to restore", "error");
+    }
+  };
+
+  const handleDeletePermanent = async (id) => {
+    if (!window.confirm("This will PERMANENTLY delete the file. Continue?")) return;
+    setDeletingId(id);
+    try {
+      await axios.delete(`${API_URL}/api/docs/${id}/permanent`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchFiles(activeFilter);
+      fetchStorageStats();
+      addToast("Deleted permanently", "success");
+    } catch (error) {
+      addToast("Delete failed", "error");
+    }
+    setDeletingId(null);
+  };
+
+  const handleBulkTrash = async (ids) => {
+      if (!window.confirm(`Move ${ids.length} items to Recycle Bin?`)) return;
+      try {
+          await axios.post(`${API_URL}/api/docs/bulk/trash`, { ids }, {
+              headers: { Authorization: `Bearer ${token}` }
+          });
+          setSelectedFileIds([]);
+          fetchFiles(activeFilter);
+          addToast("Moved items to Recycle Bin", "success");
+      } catch (error) {
+          addToast("Bulk move failed", "error");
+      }
+  };
+
+  const handleSummarize = async (id) => {
+      try {
+          const res = await axios.get(`${API_URL}/api/docs/ai/summarize/${id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+          });
+          return res.data.summary;
+      } catch (error) {
+          addToast("AI Summarize failed", "error");
+          throw error;
+      }
+  };
+
+  const handleAIByChat = async (id, question) => {
+      try {
+          const res = await axios.post(`${API_URL}/api/docs/ai/chat/${id}`, { question }, {
+              headers: { Authorization: `Bearer ${token}` }
+          });
+          return res.data.answer;
+      } catch (error) {
+          addToast("AI Chat failed", "error");
+          throw error;
+      }
   };
 
   const handleToggleFavorite = async (id) => {
@@ -465,9 +559,11 @@ export default function DashboardPage() {
   };
 
   const filteredFiles = files.filter(f => {
-    if (activeFilter === "favorites") return f.isFavorite;
-    if (activeFilter === "pinned") return f.isPinned;
-    return true;
+    if (activeFilter === "favorites") return f.isFavorite && !f.isTrashed;
+    if (activeFilter === "pinned") return f.isPinned && !f.isTrashed;
+    if (activeFilter === "vault") return f.isVault && !f.isTrashed;
+    if (activeFilter === "trash") return f.isTrashed;
+    return !f.isTrashed;
   });
 
   const handleToggleVault = async (id) => {
@@ -695,6 +791,31 @@ export default function DashboardPage() {
       }
   };
 
+  const handleSign = async (fileId, signatureData) => {
+    try {
+        const response = await axios.post(`${API_URL}/api/docs/sign/${fileId}`, 
+            { signatureData },
+            { 
+                headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob'
+            }
+        );
+        
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `signed-${signingFile.filename}`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        
+        addToast("Document signed successfully!", "success");
+    } catch (error) {
+        console.error("Signing error:", error);
+        addToast("Failed to sign document.", "error");
+    }
+  };
+
   return (
     <div className="dashboard-container">
       {/* 3D Background Elements matching MainPage */}
@@ -759,10 +880,40 @@ export default function DashboardPage() {
                 onToggleSelect={handleToggleSelect}
                 onMergePDFs={handleMergePDFs}
                 onExportAll={handleExportAll}
+                
+                // AI & Trash
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                onRestore={handleRestore}
+                onDeletePermanent={handleDeletePermanent}
+                onBulkTrash={handleBulkTrash}
+                onSummarize={handleSummarize}
+                onChat={handleAIByChat}
+                onSign={(file) => {
+                    setSigningFile(file);
+                    setShowSignModal(true);
+                }}
               />
             </div>
 
             <div className="sidebar-area">
+              <div className="sidebar-card storage-card">
+                  <div className="card-header">
+                      <h4><i className="fas fa-database"></i> Storage</h4>
+                      <button className="btn-logs" onClick={() => setShowLogModal(true)} title="View Activity Logs">
+                        <i className="fas fa-history"></i> Logs
+                      </button>
+                      <span className="storage-percent">{((storageStats.used / storageStats.limit) * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="quota-bar">
+                      <div className="quota-usage" style={{ width: `${Math.min(100, (storageStats.used / storageStats.limit) * 100)}%` }}></div>
+                  </div>
+                  <div className="quota-labels">
+                      <span>{formatFileSize(storageStats.used)} used</span>
+                      <span>{formatFileSize(storageStats.limit)}</span>
+                  </div>
+              </div>
+
               <UploadSection 
                 file={file} 
                 setFile={setFile} 
@@ -856,6 +1007,20 @@ export default function DashboardPage() {
                     setCropFile(null);
                 }}
                 onCrop={handleConfirmCrop}
+            />
+        )}
+
+        {showSignModal && signingFile && (
+            <SignModal
+                file={signingFile}
+                onClose={() => setShowSignModal(false)}
+                onSign={handleSign}
+            />
+        )}
+
+        {showLogModal && (
+            <AuditLogModal
+                onClose={() => setShowLogModal(false)}
             />
         )}
       </div>
@@ -976,6 +1141,26 @@ export default function DashboardPage() {
             box-shadow: var(--shadow-sm);
         }
 
+        .storage-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .btn-logs {
+            background: #f1f5f9;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-logs:hover { background: #e2e8f0; color: #1e293b; }
+
         .info-card h4 {
             margin-bottom: 16px;
             font-size: 1.1rem;
@@ -1001,6 +1186,62 @@ export default function DashboardPage() {
         .info-card li i {
             color: var(--accent-color);
             width: 16px;
+        }
+
+        .storage-card {
+            background: linear-gradient(135deg, var(--card-bg), rgba(var(--accent-rgb, 59, 130, 246), 0.05));
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            border-radius: 24px;
+            margin-bottom: 24px;
+        }
+
+        .storage-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .storage-card h4 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+        }
+
+        .storage-percent {
+            font-weight: 800;
+            color: var(--accent-color);
+            background: var(--accent-glow);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .quota-bar {
+            height: 8px;
+            background: var(--input-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .quota-usage {
+            height: 100%;
+            background: linear-gradient(to right, var(--accent-color), #60a5fa);
+            box-shadow: 0 0 10px var(--accent-glow);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .quota-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         @media (max-width: 1100px) {

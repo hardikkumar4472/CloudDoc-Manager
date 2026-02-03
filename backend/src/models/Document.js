@@ -17,6 +17,15 @@ const documentSchema = new mongoose.Schema(
     shareExpiry: { type: Date, default: null },
     isVault: { type: Boolean, default: false },
     expiresAt: { type: Date, default: null },
+    
+    // AI & Advanced Processing
+    summary: { type: String },
+    tags: [{ type: String }],
+    ocrText: { type: String },
+    
+    // Recycle Bin
+    isTrashed: { type: Boolean, default: false },
+    trashedAt: { type: Date },
   },
   { timestamps: true } 
 );

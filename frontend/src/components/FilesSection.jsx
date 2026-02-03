@@ -29,12 +29,21 @@ export default function FilesSection({
   onConvertImage,
   onSplitPDF,
   onCropImage,
-  selectedFileIds = [],
   onToggleSelect,
   onMergePDFs,
-  onExportAll
+  onExportAll,
+  onBulkTrash,
+  viewMode = 'grid',
+  onChat,
+  onRestore,
+  onDeletePermanent,
+  onSummarize,
+  selectedFileIds,
+  setViewMode,
+  onSign
 }) {
   const selectedPDFCount = files.filter(f => selectedFileIds.includes(f._id) && f.filename.toLowerCase().endsWith('.pdf')).length;
+  const isTrashView = activeFilter === 'trash';
   return (
     <div className="files-section">
       <div className="section-header">
@@ -60,8 +69,38 @@ export default function FilesSection({
                         <div className="gloss-shine"></div>
                     </button>
                     
-                    {selectedPDFCount > 1 && (
+                    <div className="divider-v"></div>
+
+                    <div className="view-toggle">
+                        <button 
+                          className={`toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                          onClick={() => setViewMode('grid')}
+                          title="Grid View"
+                        >
+                            <i className="fas fa-th-large"></i>
+                        </button>
+                        <button 
+                          className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                          onClick={() => setViewMode('list')}
+                          title="List View"
+                        >
+                            <i className="fas fa-list"></i>
+                        </button>
+                    </div>
+
+                    {(selectedFileIds.length > 0 || selectedPDFCount > 1) && (
                         <div className="divider-v"></div>
+                    )}
+
+                    {selectedFileIds.length > 0 && !isTrashView && (
+                         <button 
+                            onClick={() => onBulkTrash(selectedFileIds)}
+                            className="action-pill btn-danger"
+                            title="Move selected to Trash"
+                         >
+                             <i className="fas fa-trash"></i>
+                             <span>Delete {selectedFileIds.length}</span>
+                         </button>
                     )}
 
                     {selectedPDFCount > 1 && (
@@ -106,6 +145,12 @@ export default function FilesSection({
             >
               <i className="fas fa-lock"></i> Vault
             </button>
+            <button 
+              className={`filter-tab ${activeFilter === "trash" ? "active" : ""}`}
+              onClick={() => setActiveFilter("trash")}
+            >
+              <i className="fas fa-trash-alt"></i> Trash
+            </button>
           </div>
           <div className="search-container">
             <i className="fas fa-search"></i>
@@ -133,15 +178,19 @@ export default function FilesSection({
               ? "No favorite documents yet. Mark files as favorites to see them here."
               : activeFilter === "vault"
               ? "Your vault is empty. Move sensitive files here."
+              : activeFilter === "trash"
+              ? "Recycle Bin is empty. Trashed files appear here."
               : "No pinned documents yet. Pin files to see them here."}
           </p>
         </div>
       ) : (
-        <div className="files-grid">
+        <div className={viewMode === 'list' ? 'list-view' : 'grid-view'}>
           {files.map(file => (
             <FileCard
               key={file._id}
               file={file}
+              viewMode={viewMode}
+              isTrashView={isTrashView}
               deletingId={deletingId}
               togglingId={togglingId}
               handleDelete={handleDelete}
@@ -157,15 +206,19 @@ export default function FilesSection({
               onDownloadAsPdf={onDownloadAsPdf}
               onSendEmail={onSendEmail}
               onCompressPDF={onCompressPDF}
-              // New
               onToggleVault={onToggleVault}
               onSetExpiry={onSetExpiry}
               onWatermark={onWatermark}
               onConvertImage={onConvertImage}
-               onSplitPDF={onSplitPDF}
-               onCropImage={onCropImage}
-               isSelected={selectedFileIds.includes(file._id)}
-               onToggleSelect={onToggleSelect}
+              onSplitPDF={onSplitPDF}
+              onCropImage={onCropImage}
+              isSelected={selectedFileIds.includes(file._id)}
+              onToggleSelect={onToggleSelect}
+              onRestore={onRestore}
+              onDeletePermanent={onDeletePermanent}
+              onSummarize={onSummarize}
+              onChat={onChat}
+              onSign={onSign}
             />
           ))}
         </div>
@@ -505,9 +558,73 @@ export default function FilesSection({
             .toolbar-glass {
                 width: 100%;
                 justify-content: center;
+                flex-wrap: wrap;
             }
             .btn-premium { flex: 1; }
         }
+
+        .view-toggle {
+            display: flex;
+            background: var(--input-bg);
+            border-radius: 12px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .toggle-btn {
+            width: 34px;
+            height: 34px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: var(--card-bg);
+            color: var(--accent-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #ef4444;
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .grid-view {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 24px;
+          perspective: 1000px;
+        }
+
+        .list-view {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
       `}</style>
     </div>
   );

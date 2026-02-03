@@ -2,6 +2,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { sendOTP } from "../services/email.service.js";
+import speakeasy from "speakeasy";
+import qrcode from "qrcode";
 
 export const getProfile = async (req, res) => {
   try {
@@ -121,6 +123,14 @@ export const login = async (req, res) => {
     if (!user.isVerified) return res.status(400).json({ msg: "Please verify your email first." });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
+
+    if (user.isTwoFactorEnabled) {
+        return res.json({ 
+            msg: "2FA Required", 
+            twoFactorRequired: true, 
+            userId: user._id 
+        });
+    }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_ACCESS_SECRET, { expiresIn: "1h" });
 
@@ -346,5 +356,84 @@ export const checkVaultStatus = async (req, res) => {
         res.json({ hasPin: !!user.vaultPin });
     } catch (err) {
         res.status(500).json({ msg: "Server error", error: err.message });
+    }
+};
+
+// 2FA - Enable
+export const enable2FA = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        const secret = speakeasy.generateSecret({ name: `CloudDoc (${user.email})` });
+        
+        user.twoFactorSecret = secret.base32;
+        await user.save();
+
+        const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
+        res.json({ qrCodeUrl, secret: secret.base32 });
+    } catch (error) {
+        res.status(500).json({ msg: "Error enabling 2FA", error: error.message });
+    }
+};
+
+export const verify2FA = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const user = await User.findById(req.userId);
+
+        const verified = speakeasy.totp.verify({
+            secret: user.twoFactorSecret,
+            encoding: "base32",
+            token
+        });
+
+        if (verified) {
+            user.isTwoFactorEnabled = true;
+            await user.save();
+            res.json({ success: true, msg: "2FA Enabled successfully" });
+        } else {
+            res.status(400).json({ msg: "Invalid 2FA token" });
+        }
+    } catch (error) {
+        res.status(500).json({ msg: "Error verifying 2FA", error: error.message });
+    }
+};
+
+export const login2FA = async (req, res) => {
+    try {
+        const { userId, token } = req.body;
+        const user = await User.findById(userId);
+
+        const verified = speakeasy.totp.verify({
+            secret: user.twoFactorSecret,
+            encoding: "base32",
+            token
+        });
+
+        if (verified) {
+            const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_ACCESS_SECRET, { expiresIn: "1h" });
+            res.json({ 
+                msg: "Login successful", 
+                token: jwtToken,
+                user: {
+                  id: user._id,
+                  name: user.name,
+                  email: user.email,
+                  phone: user.phone
+                }
+            });
+        } else {
+            res.status(400).json({ msg: "Invalid 2FA token" });
+        }
+    } catch (error) {
+        res.status(500).json({ msg: "Error during 2FA login", error: error.message });
+    }
+};
+
+export const disable2FA = async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.userId, { isTwoFactorEnabled: false, twoFactorSecret: null });
+        res.json({ msg: "2FA disabled" });
+    } catch (error) {
+        res.status(500).json({ msg: "Error disabling 2FA" });
     }
 };

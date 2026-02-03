@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema(
     newEmailOtp: { type: String },
     newEmailOtpExpires: { type: Date },
     vaultPin: { type: String, default: null }, 
+    isTwoFactorEnabled: { type: Boolean, default: false },
+    twoFactorSecret: { type: String },
   },
   { timestamps: true }
 );

@@ -19,6 +19,12 @@ export default function ProfileModal({ user, onClose, onUpdateUser }) {
   const [passOtp, setPassOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
+  // 2FA States
+  const [show2faSetup, setShow2faSetup] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [twoFactorOtp, setTwoFactorOtp] = useState("");
+  const [is2faEnabled, setIs2faEnabled] = useState(user.isTwoFactorEnabled);
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const token = localStorage.getItem("token");
@@ -110,6 +116,53 @@ export default function ProfileModal({ user, onClose, onUpdateUser }) {
     setLoading(false);
   };
 
+  const handleEnable2FA = async () => {
+    setLoading(true);
+    try {
+        const res = await axios.post(`${API_URL}/api/auth/2fa/enable`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        setQrCodeUrl(res.data.qrCodeUrl);
+        setShow2faSetup(true);
+    } catch (error) {
+        setMessage("Failed to initialize 2FA");
+    }
+    setLoading(false);
+  };
+
+  const handleVerify2FA = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+        await axios.post(`${API_URL}/api/auth/2fa/verify`, { token: twoFactorOtp }, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        setIs2faEnabled(true);
+        setShow2faSetup(false);
+        onUpdateUser();
+        setMessage("2FA Enabled successfully!");
+    } catch (error) {
+        setMessage("Invalid 2FA code");
+    }
+    setLoading(false);
+  };
+
+  const handleDisable2FA = async () => {
+    if (!window.confirm("Are you sure? This reduces account security.")) return;
+    setLoading(true);
+    try {
+        await axios.post(`${API_URL}/api/auth/2fa/disable`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        setIs2faEnabled(false);
+        onUpdateUser();
+        setMessage("2FA Disabled");
+    } catch (error) {
+        setMessage("Failed to disable 2FA");
+    }
+    setLoading(false);
+  };
+
   return createPortal(
     <div className="modal-overlay">
       <div className="profile-modal-premium">
@@ -145,15 +198,14 @@ export default function ProfileModal({ user, onClose, onUpdateUser }) {
 
             <div className="tab-pane">
                 {message && (
-                    <div className={`status-msg ${message.includes("Failed") || message.includes("Incorrect") ? 'error' : 'success'}`}>
-                        <i className={`fas ${message.includes("Failed") || message.includes("Incorrect") ? 'fa-exclamation-circle' : 'fa-check-circle'}`}></i>
+                    <div className={`status-msg ${message.includes("Failed") || message.includes("Incorrect") || message.includes("Invalid") ? 'error' : 'success'}`}>
+                        <i className={`fas ${message.includes("Failed") || message.includes("Incorrect") || message.includes("Invalid") ? 'fa-exclamation-circle' : 'fa-check-circle'}`}></i>
                         {message}
                     </div>
                 )}
                 
                 {activeTab === 'details' && (
                     <div className="content-stack">
-                        {/* Name Section */}
                         <div className="premium-field">
                             <div className="field-label-group">
                                 <label>Full Name</label>
@@ -183,7 +235,6 @@ export default function ProfileModal({ user, onClose, onUpdateUser }) {
                             )}
                         </div>
 
-                        {/* Email Section */}
                         <div className="premium-field">
                             <div className="field-label-group">
                                 <label>Email Address</label>
@@ -282,6 +333,54 @@ export default function ProfileModal({ user, onClose, onUpdateUser }) {
                                         <button type="button" className="action-btn-ghost" onClick={() => { setPassStep(0); setOldPassword(""); }}>Cancel</button>
                                     </div>
                                 </form>
+                            )}
+                        </div>
+
+                        <div className="premium-field">
+                            <div className="field-label-group">
+                                <label>Two-Factor Authentication</label>
+                                <span className={`status-pill ${is2faEnabled ? 'active' : ''}`}>
+                                    {is2faEnabled ? 'Protected' : 'Unsecured'}
+                                </span>
+                            </div>
+
+                            {is2faEnabled ? (
+                                <div className="action-row">
+                                    <p className="hint-text">2FA is currently active on your account.</p>
+                                    <button className="action-btn-ghost btn-sm" onClick={handleDisable2FA} disabled={loading}>
+                                        Disable 2FA
+                                    </button>
+                                </div>
+                            ) : (
+                                !show2faSetup ? (
+                                    <div className="action-row">
+                                        <p className="hint-text">Add an extra layer of security to your account.</p>
+                                        <button className="action-btn-main btn-sm" onClick={handleEnable2FA} disabled={loading}>
+                                            Setup 2FA
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleVerify2FA} className="inline-form-stack setup-2fa-box">
+                                        <p className="hint-text">Scan this QR code with your Authenticator app (Google, Authy, etc.)</p>
+                                        <div className="qr-container">
+                                            {qrCodeUrl && <img src={qrCodeUrl} alt="2FA QR Code" />}
+                                        </div>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Enter 6-digit code"
+                                            value={twoFactorOtp} 
+                                            onChange={(e) => setTwoFactorOtp(e.target.value)}
+                                            className="premium-field-input otp-field"
+                                            required
+                                        />
+                                        <div className="form-actions">
+                                            <button type="submit" className="action-btn-main" disabled={loading}>
+                                                Verify & Enable
+                                            </button>
+                                            <button type="button" className="action-btn-ghost" onClick={() => setShow2faSetup(false)}>Cancel</button>
+                                        </div>
+                                    </form>
+                                )
                             )}
                         </div>
                     </div>
@@ -403,13 +502,26 @@ export default function ProfileModal({ user, onClose, onUpdateUser }) {
         .otp-helper { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: -4px; }
         .otp-field { font-family: monospace; font-size: 1.2rem; letter-spacing: 0.2em; text-align: center; font-weight: 800; }
 
+        .status-pill {
+            font-size: 0.65rem; padding: 2px 8px; border-radius: 8px;
+            background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; text-transform: uppercase;
+        }
+        .status-pill.active { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+
+        .btn-sm { padding: 10px 16px !important; font-size: 0.85rem !important; }
+
+        .action-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+
+        .setup-2fa-box { background: var(--input-bg); padding: 16px; border-radius: 20px; border: 1px solid var(--border-color); }
+        .qr-container { background: white; padding: 12px; border-radius: 12px; display: inline-block; margin: 10px auto; width: fit-content; }
+        .qr-container img { width: 140px; height: 140px; display: block; }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { 
             from { transform: translateY(30px) scale(0.95); opacity: 0; } 
             to { transform: translateY(0) scale(1); opacity: 1; } 
         }
 
-        /* Mobile specific adjustments */
         @media (max-width: 480px) {
             .profile-modal-premium { border-radius: 0; width: 100%; height: 100%; max-width: none; overflow-y: auto; }
             .modal-content-glass { padding: 30px 20px 40px; }

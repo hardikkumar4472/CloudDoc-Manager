@@ -26,10 +26,51 @@ export default function FileCard({
   onSplitPDF,
   onCropImage,
   isSelected,
-  onToggleSelect
+  onToggleSelect,
+  viewMode = 'grid',
+  isTrashView = false,
+  onRestore,
+  onDeletePermanent,
+  onSummarize,
+  onChat,
+  onSign
 }) {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
+  const [aiSummary, setAiSummary] = useState(file.summary || null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [chatQuestion, setChatQuestion] = useState("");
+  const [chatAnswer, setChatAnswer] = useState("");
+  const [isChatting, setIsChatting] = useState(false);
+  const [activeTab, setActiveTab] = useState('doc'); // 'doc' or 'ai'
+
+  const handleSummarize = async () => {
+    if (aiSummary) return;
+    setIsSummarizing(true);
+    try {
+        const response = await onSummarize(file._id);
+        setAiSummary(response);
+    } catch (err) {
+        console.error(err);
+    } finally {
+        setIsSummarizing(false);
+    }
+  };
+
+  const handleChat = async (e) => {
+    e.preventDefault();
+    if (!chatQuestion) return;
+    setIsChatting(true);
+    try {
+        const response = await onChat(file._id, chatQuestion);
+        setChatAnswer(response);
+    } catch (err) {
+        console.error(err);
+    } finally {
+        setIsChatting(false);
+    }
+  };
 
   const isImageFile = (filename) => {
     if (!filename) return false;
@@ -49,290 +90,193 @@ export default function FileCard({
   
   return (
     <>
-      <div className="file-card">
-        {getFileThumbnail(file)}
-        
-        <div className="selection-overlay" onClick={(e) => { e.stopPropagation(); onToggleSelect(file._id); }}>
-            <div className={`checkbox ${isSelected ? 'checked' : ''}`}>
-                {isSelected && <i className="fas fa-check"></i>}
+      <div className={`file-card ${viewMode === 'list' ? 'list-card' : ''} ${isSelected ? 'selected' : ''}`}>
+        <div className="card-media">
+            {getFileThumbnail(file)}
+            <div className="selection-overlay" onClick={(e) => { e.stopPropagation(); onToggleSelect(file._id); }}>
+                <div className={`checkbox ${isSelected ? 'checked' : ''}`}>
+                    {isSelected && <i className="fas fa-check"></i>}
+                </div>
             </div>
+            {file.tags && file.tags.length > 0 && viewMode === 'grid' && (
+                <div className="tag-overlay">
+                    {file.tags.map((t, idx) => <span key={idx} className="mini-tag">{t}</span>)}
+                </div>
+            )}
         </div>
         
-        <div className="file-details">
-          <div className="file-header">
-            <h4 className="file-name">{file.filename}</h4>
-            <div className="status-badges">
-              {file.isPinned && (
-                <span className="badge pinned-badge" title="Pinned">
-                  <i className="fas fa-thumbtack"></i>
-                </span>
-              )}
-              {file.isFavorite && (
-                <span className="badge favorite-badge" title="Favorite">
-                  <i className="fas fa-star"></i>
-                </span>
-              )}
+        <div className="file-content">
+          <div className="file-primary-info">
+            <div className="file-header">
+                <h4 className="file-name" title={file.filename}>
+                    {file.filename}
+                    <i className="fas fa-pencil-alt rename-icon" onClick={() => setIsRenameModalOpen(true)} title="Rename"></i>
+                </h4>
+                <div className="status-badges">
+                {file.isPinned && (
+                    <span className="badge pinned-badge" title="Pinned">
+                    <i className="fas fa-thumbtack"></i>
+                    </span>
+                )}
+                {file.isFavorite && (
+                    <span className="badge favorite-badge" title="Favorite">
+                    <i className="fas fa-star"></i>
+                    </span>
+                )}
+                </div>
+            </div>
+
+            <div className="file-meta">
+                <div className="meta-item">
+                <i className="fas fa-calendar"></i>
+                <span>{formatDate(file.updatedAt)}</span>
+                </div>
+                <div className="meta-item">
+                <i className="fas fa-weight-hanging"></i>
+                <span>{formatFileSize(file.size)}</span>
+                </div>
+                {file.tags && file.tags.length > 0 && viewMode === 'list' && (
+                    <div className="list-tags">
+                        {file.tags.map((t, idx) => <span key={idx} className="list-tag">#{t}</span>)}
+                    </div>
+                )}
             </div>
           </div>
-          
-          <div className="file-meta">
-            <div className="meta-item">
-              <i className="fas fa-calendar"></i>
-              <span>{formatDate(file.updatedAt)}</span>
-            </div>
-            <div className="meta-item">
-              <i className="fas fa-weight-hanging"></i>
-              <span>{formatFileSize(file.size)}</span>
-            </div>
-          </div>
+
           
           <div className="file-actions">
-            <div 
-              className="tooltip-container"
-              onMouseEnter={() => setActiveTooltip('share')}
-              onMouseLeave={() => setActiveTooltip(null)}
-            >
-              <button
-                onClick={() => onShareFile(file)}
-                className="action-btn share-btn"
-              >
-                <i className="fas fa-share-alt"></i>
-              </button>
-              {activeTooltip === 'share' && <span className="tooltip">Share file</span>}
-            </div>
-            
-            <div 
-              className="tooltip-container"
-              onMouseEnter={() => setActiveTooltip('email')}
-              onMouseLeave={() => setActiveTooltip(null)}
-            >
-              <button
-                onClick={() => onSendEmail(file)}
-                className="action-btn email-btn"
-              >
-                <i className="fas fa-envelope"></i>
-              </button>
-              {activeTooltip === 'email' && <span className="tooltip">Send via email</span>}
-            </div>
-
-            <div 
-              className="tooltip-container"
-              onMouseEnter={() => setActiveTooltip('favorite')}
-              onMouseLeave={() => setActiveTooltip(null)}
-            >
-              <button
-                onClick={() => handleToggleFavorite(file._id)}
-                disabled={togglingId === file._id}
-                className={`action-btn favorite-btn ${file.isFavorite ? "active" : ""}`}
-              >
-                {togglingId === file._id ? (
-                  <i className="fas fa-spinner fa-spin"></i>
-                ) : (
-                  <i className={`fas fa-star ${file.isFavorite ? "solid" : ""}`}></i>
-                )}
-              </button>
-              {activeTooltip === 'favorite' && (
-                <span className="tooltip">
-                  {file.isFavorite ? "Remove from favorites" : "Add to favorites"}
-                </span>
-              )}
-            </div>
-            
-            <div 
-              className="tooltip-container"
-              onMouseEnter={() => setActiveTooltip('pin')}
-              onMouseLeave={() => setActiveTooltip(null)}
-            >
-              <button
-                onClick={() => handleTogglePin(file._id)}
-                disabled={togglingId === file._id}
-                className={`action-btn pin-btn ${file.isPinned ? "active" : ""}`}
-              >
-                {togglingId === file._id ? (
-                  <i className="fas fa-spinner fa-spin"></i>
-                ) : (
-                  <i className="fas fa-thumbtack"></i>
-                )}
-              </button>
-              {activeTooltip === 'pin' && (
-                <span className="tooltip">
-                  {file.isPinned ? "Unpin file" : "Pin file"}
-                </span>
-              )}
-            </div>
-
-            <div 
-              className="tooltip-container"
-              onMouseEnter={() => setActiveTooltip('rename')}
-              onMouseLeave={() => setActiveTooltip(null)}
-            >
-              <button
-                onClick={() => setIsRenameModalOpen(true)}
-                className="action-btn rename-btn"
-              >
-                <i className="fas fa-edit"></i>
-              </button>
-              {activeTooltip === 'rename' && <span className="tooltip">Rename file</span>}
-            </div>
-
-            {file.versions && file.versions.length > 0 && (
-              <div 
-                className="tooltip-container"
-                onMouseEnter={() => setActiveTooltip('versions')}
-                onMouseLeave={() => setActiveTooltip(null)}
-              >
-                <button
-                  onClick={() => onViewVersions(file)}
-                  className="action-btn versions-btn"
-                >
-                  <i className="fas fa-history"></i>
-                </button>
-                {activeTooltip === 'versions' && <span className="tooltip">View versions</span>}
-              </div>
-            )}
-
-            {isImage && (
-              <div 
-                className="tooltip-container"
-                onMouseEnter={() => setActiveTooltip('resize')}
-                onMouseLeave={() => setActiveTooltip(null)}
-              >
-                <button
-                  onClick={() => onResizeImage(file)}
-                  className="action-btn resize-btn"
-                >
-                  <i className="fas fa-expand-arrows-alt"></i>
-                </button>
-                {activeTooltip === 'resize' && <span className="tooltip">Resize image</span>}
-              </div>
-            )}
-
-            {isImage && (
-              <div 
-                className="tooltip-container"
-                onMouseEnter={() => setActiveTooltip('pdf')}
-                onMouseLeave={() => setActiveTooltip(null)}
-              >
-                <button
-                  onClick={() => onDownloadAsPdf(file)}
-                  className="action-btn pdf-btn"
-                >
-                  <i className="fas fa-file-pdf"></i>
-                </button>
-                {activeTooltip === 'pdf' && <span className="tooltip">Download as PDF</span>}
-              </div>
-            )}
-
-            {isPDF && (
-              <div 
-                className="tooltip-container"
-                onMouseEnter={() => setActiveTooltip('compress')}
-                onMouseLeave={() => setActiveTooltip(null)}
-              >
-                <button
-                  onClick={() => onCompressPDF(file)}
-                  className="action-btn compress-btn"
-                >
-                  <i className="fas fa-compress-alt"></i>
-                </button>
-                {activeTooltip === 'compress' && <span className="tooltip">Compress PDF</span>}
-              </div>
-            )}
-            
-            <div 
-              className="tooltip-container"
-              onMouseEnter={() => setActiveTooltip('view')}
-              onMouseLeave={() => setActiveTooltip(null)}
-            >
-              <a 
-                href={file.url} 
-                target="_blank" 
-                rel="noreferrer" 
-                className="action-btn view-btn"
-              >
-                <i className="fas fa-eye"></i>
-              </a>
-              {activeTooltip === 'view' && <span className="tooltip">View file</span>}
-            </div>
-            
-            <div 
-              className="tooltip-container"
-              onMouseEnter={() => setActiveTooltip('download')}
-              onMouseLeave={() => setActiveTooltip(null)}
-            >
-              <a 
-                href={`${API_URL}/api/docs/download/${file._id}`}
-                download={file.filename}
-                className="action-btn download-btn"
-              >
-                <i className="fas fa-download"></i>
-              </a>
-              {activeTooltip === 'download' && <span className="tooltip">Download file</span>}
-            </div>
-            
-            <div 
-              className="tooltip-container"
-              onMouseEnter={() => setActiveTooltip('delete')}
-              onMouseLeave={() => setActiveTooltip(null)}
-            >
-              <button 
-                onClick={() => handleDelete(file._id)} 
-                disabled={deletingId === file._id}
-                className="action-btn delete-btn"
-              >
-                {deletingId === file._id ? (
-                  <i className="fas fa-spinner fa-spin"></i>
-                ) : (
-                  <i className="fas fa-trash"></i>
-                )}
-              </button>
-              {activeTooltip === 'delete' && <span className="tooltip">Delete file</span>}
-            </div>
-
-            {/* New Features */}
-            <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('vault')} onMouseLeave={() => setActiveTooltip(null)}>
-                <button onClick={() => onToggleVault(file._id)} className={`action-btn vault-btn ${file.isVault ? 'active' : ''}`}>
-                    <i className={`fas ${file.isVault ? 'fa-lock-open' : 'fa-lock'}`}></i>
-                </button>
-                {activeTooltip === 'vault' && <span className="tooltip">{file.isVault ? 'Remove from Vault' : 'Move to Vault'}</span>}
-            </div>
-
-            <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('expiry')} onMouseLeave={() => setActiveTooltip(null)}>
-                <button onClick={() => onSetExpiry(file._id)} className="action-btn expiry-btn">
-                    <i className="fas fa-clock"></i>
-                </button>
-                {activeTooltip === 'expiry' && <span className="tooltip">Set Expiry</span>}
-            </div>
-
-            <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('watermark')} onMouseLeave={() => setActiveTooltip(null)}>
-                <button onClick={() => onWatermark(file._id)} className="action-btn watermark-btn">
-                    <i className="fas fa-tint"></i>
-                </button>
-                {activeTooltip === 'watermark' && <span className="tooltip">Add Watermark</span>}
-            </div>
-
-            {isPDF && (
-                <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('split')} onMouseLeave={() => setActiveTooltip(null)}>
-                    <button onClick={() => onSplitPDF(file)} className="action-btn split-btn">
-                        <i className="fas fa-cut"></i>
+            {isTrashView ? (
+                <div className="trash-actions">
+                    <button className="action-pill btn-restore" onClick={() => onRestore(file._id)}>
+                        <i className="fas fa-undo"></i> Restore
                     </button>
-                    {activeTooltip === 'split' && <span className="tooltip">Split PDF</span>}
+                    <button className="action-pill btn-delete-perm" onClick={() => onDeletePermanent(file._id)}>
+                        <i className="fas fa-trash-alt"></i> Delete Forever
+                    </button>
                 </div>
-            )}
-
-            {isImage && (
+            ) : (
                 <>
-                <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('convert')} onMouseLeave={() => setActiveTooltip(null)}>
-                    <button onClick={() => onConvertImage(file._id)} className="action-btn convert-btn">
-                        <i className="fas fa-exchange-alt"></i>
+                <div className="action-tabs">
+                    <button 
+                        className={`tab-btn ${activeTab === 'doc' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('doc')}
+                    >
+                        <i className="fas fa-tools"></i> Doc Tools
                     </button>
-                    {activeTooltip === 'convert' && <span className="tooltip">Convert Format</span>}
+                    <button 
+                        className={`tab-btn ${activeTab === 'ai' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('ai')}
+                    >
+                        <i className="fas fa-magic"></i> AI Features
+                    </button>
                 </div>
-                <div className="tooltip-container" onMouseEnter={() => setActiveTooltip('crop')} onMouseLeave={() => setActiveTooltip(null)}>
-                    <button onClick={() => onCropImage(file._id)} className="action-btn crop-btn">
-                        <i className="fas fa-crop"></i>
-                    </button>
-                    {activeTooltip === 'crop' && <span className="tooltip">Crop Image</span>}
+
+                <div className="tab-content">
+                    {activeTab === 'doc' && (
+                        <div className="doc-tools-grid">
+                            {/* Row 1 */}
+                            <div className="icon-btn-circle share-v2" onClick={() => onShareFile(file)} title="Share">
+                                <i className="fas fa-share-alt"></i>
+                            </div>
+                            <div className="icon-btn-circle email-v2" onClick={() => onSendEmail(file)} title="Email">
+                                <i className="fas fa-envelope"></i>
+                            </div>
+                            <div className="icon-btn-circle favorite-v2" onClick={() => handleToggleFavorite(file._id)}>
+                                <i className={`fas fa-star ${file.isFavorite ? 'filled' : ''}`}></i>
+                            </div>
+                            <div className="icon-btn-circle pin-v2" onClick={() => handleTogglePin(file._id)}>
+                                <i className="fas fa-thumbtack"></i>
+                            </div>
+                            <div className="icon-btn-circle rename-v2" onClick={() => setIsRenameModalOpen(true)}>
+                                <i className="fas fa-edit"></i>
+                            </div>
+
+                            {/* Row 2 */}
+                            <div className="icon-btn-circle resize-v2" onClick={() => isImage ? onResizeImage(file) : onCompressPDF(file._id)}>
+                                <i className="fas fa-expand-arrows-alt"></i>
+                            </div>
+                            <div className="icon-btn-circle view-v2" onClick={() => window.open(file.url, '_blank')}>
+                                <i className="fas fa-eye"></i>
+                            </div>
+                            <a href={`${API_URL}/api/docs/download/${file._id}`} download={file.filename} className="icon-btn-circle download-v2">
+                                <i className="fas fa-download"></i>
+                            </a>
+                            <div className="icon-btn-circle delete-v2" onClick={() => handleDelete(file._id)}>
+                                <i className="fas fa-trash"></i>
+                            </div>
+                            <div className="icon-btn-circle vault-v2" onClick={() => onToggleVault(file._id)}>
+                                <i className={`fas ${file.isVault ? 'fa-lock' : 'fa-lock-open'}`}></i>
+                            </div>
+
+                            {/* Row 3 */}
+                            <div className="icon-btn-circle expiry-v2" onClick={() => onSetExpiry(file._id)}>
+                                <i className="fas fa-clock"></i>
+                            </div>
+                            <div className="icon-btn-circle watermark-v2" onClick={() => onWatermark(file._id)}>
+                                <i className="fas fa-tint"></i>
+                            </div>
+                            {isPDF && (
+                                <div className="icon-btn-circle split-v2" onClick={() => onSplitPDF(file._id)}>
+                                    <i className="fas fa-cut"></i>
+                                </div>
+                            )}
+                            {isPDF && (
+                                <div className="icon-btn-circle sign-v2" onClick={() => onSign(file)}>
+                                    <i className="fas fa-signature"></i>
+                                </div>
+                            )}
+                             <div className="icon-btn-circle history-v2" onClick={() => onViewVersions(file)}>
+                                <i className="fas fa-history"></i>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'ai' && (
+                        <div className="ai-tools-group">
+                            <div className="ai-buttons">
+                                <button className="ai-action-btn summarize" onClick={handleSummarize} disabled={isSummarizing}>
+                                    <i className={`fas ${isSummarizing ? 'fa-spinner fa-spin' : 'fa-magic'}`}></i>
+                                    {aiSummary ? 'Summary Ready' : 'Summarize File'}
+                                </button>
+                                <button className={`ai-action-btn chat ${showChat ? 'active' : ''}`} onClick={() => setShowChat(!showChat)}>
+                                    <i className="fas fa-comment-alt"></i>
+                                    {showChat ? 'Hide Chat' : 'Chat with AI'}
+                                </button>
+                            </div>
+
+                            {aiSummary && (
+                                <div className="ai-summary-box-v2">
+                                    <div className="box-header-v2">
+                                        <i className="fas fa-robot"></i> AI INSIGHTS
+                                    </div>
+                                    <p>{aiSummary}</p>
+                                </div>
+                            )}
+
+                            {showChat && (
+                                <div className="ai-chat-box-v2">
+                                    <div className="chat-content-v2">
+                                        {chatAnswer && (
+                                            <div className="ai-response">
+                                                <div className="response-header">AI ASSISTANT</div>
+                                                <p>{chatAnswer}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <form className="chat-form-v2" onSubmit={handleChat}>
+                                        <input 
+                                            value={chatQuestion} 
+                                            onChange={(e) => setChatQuestion(e.target.value)} 
+                                            placeholder="Ask anything about this document..."
+                                        />
+                                        <button disabled={isChatting}>
+                                            <i className={`fas ${isChatting ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 </>
             )}
@@ -490,9 +434,9 @@ export default function FileCard({
         
         .file-actions {
           display: flex;
-          gap: 8px;
+          flex-direction: column;
+          gap: 12px;
           margin-top: auto;
-          flex-wrap: wrap;
           position: relative;
         }
         
@@ -668,6 +612,56 @@ export default function FileCard({
           cursor: not-allowed;
         }
 
+        .version-btn { background: rgba(79, 70, 229, 0.1); color: #4f46e5; border: 1px solid rgba(79, 70, 229, 0.2); }
+        .version-btn:hover { background: rgba(79, 70, 229, 0.3); }
+
+        .sign-btn { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); }
+        .sign-btn:hover { background: rgba(139, 92, 246, 0.2); }
+
+        .resize-btn { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .resize-btn:hover { background: rgba(16, 185, 129, 0.2); }
+
+        .rename-icon {
+          margin-left: 8px;
+          font-size: 0.8rem;
+          color: #94a3b8;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+        .rename-icon:hover { color: var(--accent-color); }
+
+        .secondary-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .version-btn { background: rgba(79, 70, 229, 0.1); color: #4f46e5; border: 1px solid rgba(79, 70, 229, 0.2); }
+        .version-btn:hover { background: rgba(79, 70, 229, 0.2); }
+
+        .sign-btn { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); }
+        .sign-btn:hover { background: rgba(139, 92, 246, 0.2); }
+
+        .resize-btn { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .resize-btn:hover { background: rgba(16, 185, 129, 0.2); }
+
+        .rename-icon {
+          margin-left: 8px;
+          font-size: 0.8rem;
+          color: #94a3b8;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+        .rename-icon:hover { color: var(--accent-color); }
+
+        .secondary-actions {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+        }
+
         .vault-btn { background: rgba(96, 125, 139, 0.2); color: #607d8b; border: 1px solid rgba(96, 125, 139, 0.3); }
         .vault-btn:hover, .vault-btn.active { background: rgba(96, 125, 139, 0.3); color: #455a64; }
 
@@ -685,6 +679,175 @@ export default function FileCard({
 
         .crop-btn { background: rgba(233, 30, 99, 0.2); color: #e91e63; border: 1px solid rgba(233, 30, 99, 0.3); }
         .crop-btn:hover { background: rgba(233, 30, 99, 0.3); }
+
+        .pdf-tool-btn { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .pdf-tool-btn:hover { background: rgba(59, 130, 246, 0.2); }
+
+        .img-tool-btn { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.2); }
+        .img-tool-btn:hover { background: rgba(139, 92, 246, 0.2); }
+
+        .ai-btn { background: rgba(236, 72, 153, 0.1); color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.2); }
+        .ai-btn.active, .ai-btn:hover { background: #ec4899; color: white; }
+
+        .ai-chat-btn { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.2); }
+        .ai-chat-btn.active, .ai-chat-btn:hover { background: #0ea5e9; color: white; }
+
+        .action-tabs {
+            display: flex;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            gap: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .tab-btn.active {
+            background: white;
+            color: #1e293b;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .doc-tools-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            padding: 4px;
+        }
+
+        .icon-btn-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1.5px solid rgba(0,0,0,0.05);
+            text-decoration: none;
+        }
+        .icon-btn-circle:hover { transform: scale(1.1); }
+
+        .share-v2 { color: #a855f7; background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.2); }
+        .email-v2 { color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); }
+        .favorite-v2 { color: #64748b; background: rgba(100, 116, 139, 0.1); }
+        .favorite-v2 i.filled { color: #f59e0b; }
+        .pin-v2 { color: #0ea5e9; background: rgba(14, 165, 233, 0.1); }
+        .rename-v2 { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+        
+        .resize-v2 { color: #334155; background: white; border: 2px solid #e2e8f0; } /* White circle like image */
+        .view-v2 { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .download-v2 { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .delete-v2 { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .vault-v2 { color: #475569; background: rgba(71, 85, 105, 0.1); }
+
+        .expiry-v2 { color: #f97316; background: rgba(249, 115, 22, 0.1); }
+        .watermark-v2 { color: #06b6d4; background: rgba(6, 182, 212, 0.1); }
+        .split-v2 { color: #64748b; background: rgba(100, 116, 139, 0.1); }
+        .sign-v2 { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+        .history-v2 { color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+
+        .ai-tools-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .ai-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .ai-action-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .summarize { background: #ec4899; color: white; }
+        .chat { background: #0ea5e9; color: white; }
+        .chat.active { background: #0369a1; }
+
+        .ai-summary-box-v2 {
+            background: rgba(14, 165, 233, 0.05);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #f1f5f9;
+            margin-top: 8px;
+        }
+        .box-header-v2 {
+            font-weight: 800;
+            color: #0ea5e9;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-chat-box-v2 {
+            background: #f0f9ff;
+            border-radius: 12px;
+            border: 1px solid #bae6fd;
+            overflow: hidden;
+        }
+        .ai-response {
+            padding: 12px;
+            font-size: 0.85rem;
+        }
+        .response-header { font-weight: 800; color: #0284c7; font-size: 0.7rem; margin-bottom: 4px; }
+        .chat-form-v2 {
+            display: flex;
+            padding: 8px;
+            gap: 4px;
+            background: white;
+            border-top: 1px solid #bae6fd;
+        }
+        .chat-form-v2 input {
+            flex: 1;
+            border: none;
+            padding: 8px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .chat-form-v2 button {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .trash-actions {
+            display: flex;
+            gap: 8px;
+        }
+
         
         @media (max-width: 480px) {
           .file-thumbnail, .file-icon-large {
@@ -730,6 +893,178 @@ export default function FileCard({
             background: var(--brand-color, #0d9488);
             border-color: var(--brand-color, #0d9488);
         }
+
+        .list-card {
+            flex-direction: row;
+            padding: 12px 20px;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .list-card .card-media {
+            width: 80px;
+            height: 60px;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .list-card .file-content {
+            padding: 0;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .list-card .file-header {
+            margin-bottom: 4px;
+        }
+
+        .list-card .file-meta {
+            flex-direction: row;
+            gap: 20px;
+        }
+
+        .list-card .file-actions {
+            margin-top: 0;
+            justify-content: flex-end;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .action-pill {
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-restore {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        .btn-restore:hover { background: #10b981; color: white; }
+
+        .btn-delete-perm {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        .btn-delete-perm:hover { background: #ef4444; color: white; }
+
+        .ai-summary-box {
+            background: var(--accent-glow);
+            border: 1px solid var(--accent-color);
+            padding: 12px;
+            border-radius: 12px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        .ai-summary-box .box-header {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-chat-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 8px;
+            gap: 8px;
+            background: var(--input-bg);
+        }
+        .chat-input input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .chat-input button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .chat-messages {
+            padding: 12px;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .chat-messages .answer {
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 10px;
+            line-height: 1.5;
+        }
+
+        .tag-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 6px;
+            flex-direction: column;
+            align-items: flex-end;
+            z-index: 5;
+        }
+
+        .mini-tag {
+            background: rgba(14, 165, 233, 0.9);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .list-tags {
+            display: flex;
+            gap: 8px;
+            margin-left: 10px;
+        }
+        .list-tag {
+            color: var(--accent-color);
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
       `}</style>
     </>
   );

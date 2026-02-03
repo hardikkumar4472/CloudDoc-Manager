@@ -6,6 +6,9 @@ import jsPDF from "jspdf";
 import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib';
 import { sendMail } from "../services/sendEmail.js";
 import archiver from "archiver";
+import * as aiService from "../services/ai.service.js";
+import mongoose from "mongoose";
+import Log from "../models/Log.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -120,7 +123,32 @@ export const uploadFile = async (req, res) => {
       textContent, 
     });
 
+    // Generate AI processing in background (don't block response)
+    (async () => {
+        try {
+            const buffer = req.file.buffer;
+            const resTags = await aiService.autoTagDocument(doc.filename, buffer, doc.type);
+            doc.tags = resTags;
+            if (doc.type.startsWith("image/")) {
+                doc.ocrText = await aiService.performOCR(buffer);
+            }
+            await doc.save();
+        } catch (err) {
+            console.error("Background AI failed:", err);
+        }
+    })();
+
     await doc.save();
+
+    // Log upload
+    await Log.create({
+        userId: req.userId,
+        documentId: doc._id,
+        action: "UPLOAD",
+        details: `Uploaded ${doc.filename}`,
+        ip: req.ip || req.connection.remoteAddress,
+        userAgent: req.headers['user-agent']
+    });
 
     res.status(201).json({ msg: "File uploaded successfully", document: doc });
   } catch (error) {
@@ -130,14 +158,19 @@ export const uploadFile = async (req, res) => {
 };
 export const getFiles = async (req, res) => {
   try {
-    const { vault } = req.query;
+    const { vault, trash } = req.query;
     const query = { uploadedBy: req.userId };
 
-    // Handle Vault Visibility
-    if (vault === 'true') {
-      query.isVault = true;
+    // Handle Vault/Trash Visibility
+    if (trash === 'true') {
+      query.isTrashed = true;
     } else {
-      query.isVault = { $ne: true }; // Default: hide vault items
+      query.isTrashed = { $ne: true };
+      if (vault === 'true') {
+        query.isVault = true;
+      } else {
+        query.isVault = { $ne: true };
+      }
     }
 
     // Handle Expiry: Exclude files that have expired
@@ -367,6 +400,17 @@ export const downloadFile = async (req, res) => {
     );
     res.setHeader("Content-Type", doc.type || "application/octet-stream");
     const buffer = Buffer.from(await data.arrayBuffer());
+
+    // Log download
+    await Log.create({
+        userId: req.userId || null,
+        documentId: id,
+        action: "DOWNLOAD",
+        details: `Downloaded ${doc.filename}`,
+        ip: req.ip || req.connection.remoteAddress,
+        userAgent: req.headers['user-agent']
+    });
+
     res.send(buffer);
   } catch (err) {
     console.error("Download controller error:", err);
@@ -811,5 +855,216 @@ export const downloadAllFiles = async (req, res) => {
         if (!res.headersSent) {
             res.status(500).json({ msg: "Error exporting files", error: error.message });
         }
+    }
+};
+
+// AI Intelligence
+export const summarizeDocument = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const doc = await Document.findById(id);
+        if (!doc) return res.status(404).json({ msg: "Document not found" });
+
+        if (doc.summary) return res.json({ summary: doc.summary });
+
+        const { data, error } = await supabase.storage.from("documents").download(doc.public_id);
+        if (error) throw error;
+
+        const buffer = Buffer.from(await data.arrayBuffer());
+        const summary = await aiService.summarizeDocument(buffer, doc.type);
+        
+        doc.summary = summary;
+        await doc.save();
+
+        res.json({ summary });
+    } catch (error) {
+        res.status(500).json({ msg: "AI Summary failed", error: error.message });
+    }
+};
+
+export const chatWithDocument = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { question } = req.body;
+        const doc = await Document.findById(id);
+        if (!doc) return res.status(404).json({ msg: "Document not found" });
+
+        const { data, error } = await supabase.storage.from("documents").download(doc.public_id);
+        if (error) throw error;
+
+        const buffer = Buffer.from(await data.arrayBuffer());
+        const answer = await aiService.chatWithDocument(buffer, doc.type, question);
+        
+        res.json({ answer });
+    } catch (error) {
+        res.status(500).json({ msg: "AI Chat failed", error: error.message });
+    }
+};
+
+export const autoTagDocument = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const doc = await Document.findById(id);
+        if (!doc) return res.status(404).json({ msg: "Document not found" });
+
+        const { data, error } = await supabase.storage.from("documents").download(doc.public_id);
+        if (error) throw error;
+
+        const buffer = Buffer.from(await data.arrayBuffer());
+        const tags = await aiService.autoTagDocument(doc.filename, buffer, doc.type);
+        
+        doc.tags = tags;
+        await doc.save();
+
+        res.json({ tags });
+    } catch (error) {
+        res.status(500).json({ msg: "Auto-tagging failed", error: error.message });
+    }
+};
+
+// Recycle Bin Logic
+export const moveToTrash = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const doc = await Document.findById(id);
+        if (!doc) return res.status(404).json({ msg: "Document not found" });
+
+        doc.isTrashed = true;
+        doc.trashedAt = new Date();
+        await doc.save();
+
+        res.json({ msg: "Moved to Recycle Bin" });
+    } catch (error) {
+        res.status(500).json({ msg: "Failed to move to trash", error: error.message });
+    }
+};
+
+export const restoreFromTrash = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const doc = await Document.findById(id);
+        if (!doc) return res.status(404).json({ msg: "Document not found" });
+
+        doc.isTrashed = false;
+        doc.trashedAt = null;
+        await doc.save();
+
+        res.json({ msg: "Document restored" });
+    } catch (error) {
+        res.status(500).json({ msg: "Failed to restore", error: error.message });
+    }
+};
+
+export const deletePermanently = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const doc = await Document.findById(id);
+        if (!doc) return res.status(404).json({ msg: "Document not found" });
+
+        const { error } = await supabase.storage.from("documents").remove([doc.public_id]);
+        if (error) throw error;
+
+        await Document.findByIdAndDelete(id);
+
+        // Log delete
+        await Log.create({
+            userId: req.userId,
+            action: "DELETE_PERMANENT",
+            details: `Permanently deleted ${doc.filename}`,
+            ip: req.ip || req.connection.remoteAddress,
+            userAgent: req.headers['user-agent']
+        });
+
+        res.json({ msg: "Deleted permanently" });
+    } catch (error) {
+        res.status(500).json({ msg: "Failed to delete permanently", error: error.message });
+    }
+};
+
+// Bulk Actions
+export const bulkMoveToTrash = async (req, res) => {
+    try {
+        const { ids } = req.body;
+        await Document.updateMany({ _id: { $in: ids }, uploadedBy: req.userId }, { isTrashed: true, trashedAt: new Date() });
+        res.json({ msg: `${ids.length} items moved to trash` });
+    } catch (error) {
+        res.status(500).json({ msg: "Bulk move failed", error: error.message });
+    }
+};
+
+export const getStorageStats = async (req, res) => {
+    try {
+        const stats = await Document.aggregate([
+            { $match: { uploadedBy: new mongoose.Types.ObjectId(req.userId) } },
+            { $group: { _id: null, totalSize: { $sum: "$size" }, count: { $sum: 1 } } }
+        ]);
+        
+        const used = stats.length > 0 ? stats[0].totalSize : 0;
+        const limit = 5 * 1024 * 1024 * 1024; // 5GB limit
+        
+        res.json({ used, limit, count: stats.length > 0 ? stats[0].count : 0 });
+    } catch (error) {
+        res.status(500).json({ msg: "Failed to fetch stats", error: error.message });
+    }
+};
+
+// Digital Signature
+export const signDocument = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { signatureData, x = 400, y = 100, scale = 0.5 } = req.body; // signatureData is base64
+        
+        const doc = await Document.findById(id);
+        if (!doc || doc.type !== "application/pdf") {
+            return res.status(400).json({ msg: "Only PDFs can be signed" });
+        }
+
+        const { data: pdfData, error } = await supabase.storage.from("documents").download(doc.public_id);
+        if (error) throw error;
+
+        const buffer = Buffer.from(await pdfData.arrayBuffer());
+        const pdfDoc = await PDFDocument.load(buffer);
+        
+        const sigImage = await pdfDoc.embedPng(signatureData); // Expecting PNG base64
+        const pages = pdfDoc.getPages();
+        const lastPage = pages[pages.length - 1];
+        
+        const dims = sigImage.scale(scale);
+        lastPage.drawImage(sigImage, {
+            x,
+            y,
+            width: dims.width,
+            height: dims.height,
+        });
+
+        const signedPdfBytes = await pdfDoc.save();
+        
+        // Log signing
+        await Log.create({
+            userId: req.userId,
+            documentId: id,
+            action: "SIGN",
+            details: `Digitally signed PDF: ${doc.filename}`,
+            ip: req.ip || req.connection.remoteAddress,
+            userAgent: req.headers['user-agent']
+        });
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=signed-${doc.filename}`);
+        res.send(Buffer.from(signedPdfBytes));
+    } catch (error) {
+        res.status(500).json({ msg: "Signing failed", error: error.message });
+    }
+};
+
+export const getAuditLogs = async (req, res) => {
+    try {
+        const logs = await Log.find({ userId: req.userId })
+            .populate("documentId", "filename")
+            .sort({ createdAt: -1 })
+            .limit(50);
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ msg: "Failed to fetch logs", error: error.message });
     }
 };

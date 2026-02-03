@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.56.1",
     "archiver": "^7.0.1",
     "bcrypt": "^6.0.0",
@@ -22,14 +23,18 @@
     "googleapis": "^159.0.0",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.2",
+    "luxon": "^3.7.2",
     "mongoose": "^8.18.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
     "pdf-compressor": "^1.0.5",
     "pdf-lib": "^1.17.1",
-    "pdf-parse": "^1.1.1",
+    "pdf-parse": "^1.1.4",
+    "qrcode": "^1.5.4",
     "sharp": "^0.34.3",
-    "sib-api-v3-sdk": "^8.5.0"
+    "sib-api-v3-sdk": "^8.5.0",
+    "speakeasy": "^2.0.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
