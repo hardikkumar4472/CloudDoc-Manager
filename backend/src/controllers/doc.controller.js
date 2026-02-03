@@ -127,11 +127,20 @@ export const uploadFile = async (req, res) => {
     (async () => {
         try {
             const buffer = req.file.buffer;
-            const resTags = await aiService.autoTagDocument(doc.filename, buffer, doc.type);
-            doc.tags = resTags;
+            
+            // Generate Tags, Summary and OCR in parallel
+            const [tags, summary] = await Promise.all([
+                aiService.autoTagDocument(doc.filename, buffer, doc.type),
+                aiService.summarizeDocument(buffer, doc.type)
+            ]);
+
+            doc.tags = tags;
+            doc.summary = summary;
+
             if (doc.type.startsWith("image/")) {
                 doc.ocrText = await aiService.performOCR(buffer);
             }
+            
             await doc.save();
         } catch (err) {
             console.error("Background AI failed:", err);
