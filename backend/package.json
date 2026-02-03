@@ -1,9 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "test": "echo \"Error: no test \" && exit 1"
   },
   "keywords": [],
@@ -11,8 +13,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "sib-api-v3-sdk": "^8.5.0",
     "@supabase/supabase-js": "^2.56.1",
+    "archiver": "^7.0.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
@@ -26,7 +28,8 @@
     "pdf-compressor": "^1.0.5",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
-    "sharp": "^0.34.3"
+    "sharp": "^0.34.3",
+    "sib-api-v3-sdk": "^8.5.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

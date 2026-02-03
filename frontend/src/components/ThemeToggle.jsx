@@ -22,53 +22,50 @@ export default function ThemeToggle() {
       <style>{`
         .theme-toggle-btn {
           position: fixed;
-          bottom: 30px; /* Moved to bottom right to avoid navbar conflict */
-          top: auto;
+          bottom: 30px;
           right: 30px;
           width: 50px;
           height: 50px;
           border-radius: 50%;
-          border: 1px solid var(--border-color);
-          background: var(--bg-secondary); /* Solid background */
+          border: none;
+          background: linear-gradient(135deg, var(--card-bg), var(--bg-secondary));
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
           color: var(--text-primary);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          z-index: 2000;
-          transition: all 0.3s ease;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+          z-index: 9999; /* Highest priority */
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          box-shadow: 
+            0 10px 25px -5px rgba(0, 0, 0, 0.2), 
+            0 0 0 1px var(--border-color) inset;
         }
         
         .theme-toggle-btn:hover {
-          transform: rotate(15deg) scale(1.1);
-          border-color: var(--accent-color);
+          transform: translateY(-5px) scale(1.1);
           color: var(--accent-color);
-          box-shadow: 0 0 15px var(--accent-glow);
+          box-shadow: 
+            0 15px 30px -5px rgba(0, 0, 0, 0.3), 
+            0 0 0 1px var(--accent-color) inset;
         }
         
         .theme-toggle-btn i {
-          font-size: 20px;
-        }
-
-        /* Adjust position for Dashboard to avoid overlapping with user menu/logout */
-        .theme-toggle-btn.dashboard-mode {
-          right: 80px; /* Move left of the logout/user section */
+          font-size: 22px;
+          transition: transform 0.5s ease;
         }
         
+        .theme-toggle-btn:hover i {
+             transform: rotate(180deg);
+        }
+
         @media (max-width: 768px) {
           .theme-toggle-btn {
             bottom: 20px;
-            top: auto;
             right: 20px;
             width: 45px;
             height: 45px;
-          }
-
-          /* On mobile dashboard, move it further left or below */
-          .theme-toggle-btn.dashboard-mode {
-            top: 15px;
-            right: 70px; /* Ensure it clears the logout button in header */
           }
         }
       `}</style>

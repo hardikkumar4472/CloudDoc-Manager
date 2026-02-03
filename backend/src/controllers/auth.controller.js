@@ -204,3 +204,147 @@ export const requestPasswordReset = async (req, res) => {
   }
 };
 
+export const updateName = async (req, res) => {
+  try {
+    const { name } = req.body;
+    await User.findByIdAndUpdate(req.userId, { name });
+    res.json({ msg: "Name updated successfully" });
+  } catch (err) {
+    res.status(500).json({ msg: "Error updating name", error: err.message });
+  }
+};
+
+export const requestEmailChange = async (req, res) => {
+  try {
+    const { newEmail } = req.body;
+    
+    // Check if email already used
+    const existing = await User.findOne({ email: newEmail });
+    if (existing) {
+        return res.status(400).json({ msg: "This email is already associated with an account." });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    await User.findByIdAndUpdate(req.userId, {
+        newEmail,
+        newEmailOtp: otp,
+        newEmailOtpExpires: Date.now() + 10 * 60 * 1000 // 10 mins
+    });
+
+    await sendOTP(newEmail, otp);
+
+    res.json({ msg: `OTP sent to ${newEmail}` });
+  } catch (err) {
+    res.status(500).json({ msg: "Error requesting email change", error: err.message });
+  }
+};
+
+export const verifyEmailChange = async (req, res) => {
+  try {
+    const { otp } = req.body;
+    const user = await User.findById(req.userId);
+
+    if (!user.newEmailOtp || String(user.newEmailOtp) !== String(otp) || Date.now() > user.newEmailOtpExpires) {
+        return res.status(400).json({ msg: "Invalid or expired OTP" });
+    }
+
+    // Double check uniqueness just in case
+    const existing = await User.findOne({ email: user.newEmail });
+    if (existing) return res.status(400).json({ msg: "Email already taken" });
+
+    user.email = user.newEmail;
+    user.newEmail = undefined;
+    user.newEmailOtp = undefined;
+    user.newEmailOtpExpires = undefined;
+    await user.save();
+
+    res.json({ msg: "Email updated successfully" });
+  } catch (err) {
+      res.status(500).json({ msg: "Error verifying email change", error: err.message });
+  }
+};
+
+export const requestPasswordChange = async (req, res) => {
+  try {
+    const { oldPassword } = req.body;
+    const user = await User.findById(req.userId);
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) return res.status(400).json({ msg: "Incorrect current password" });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpires = Date.now() + 5 * 60 * 1000;
+    await user.save();
+
+    await sendOTP(user.email, otp); // Send to CURRENT email
+
+    res.json({ msg: "OTP sent to your email to confirm password change" });
+  } catch (err) {
+      res.status(500).json({ msg: "Error processing request", error: err.message });
+  }
+};
+
+export const verifyPasswordChange = async (req, res) => {
+  try {
+      const { otp, newPassword } = req.body;
+      const user = await User.findById(req.userId);
+
+      if (String(user.otp) !== String(otp) || Date.now() > user.otpExpires) {
+          return res.status(400).json({ msg: "Invalid or expired OTP" });
+      }
+
+      if (newPassword.length < 6) return res.status(400).json({ msg: "Password too short" });
+
+      user.password = await bcrypt.hash(newPassword, 10);
+      user.otp = undefined;
+      user.otpExpires = undefined;
+      await user.save();
+
+      res.json({ msg: "Password updated successfully" });
+  } catch (err) {
+      res.status(500).json({ msg: "Error updating password", error: err.message });
+  }
+};
+
+
+export const setVaultPin = async (req, res) => {
+  try {
+    const { pin } = req.body;
+    if (!pin || pin.length !== 4) {
+      return res.status(400).json({ msg: "PIN must be 4 digits" });
+    }
+
+    const hashedPin = await bcrypt.hash(pin, 10);
+    await User.findByIdAndUpdate(req.userId, { vaultPin: hashedPin });
+    res.json({ msg: "Vault PIN set successfully" });
+  } catch (err) {
+    res.status(500).json({ msg: "Server error setting PIN", error: err.message });
+  }
+};
+
+export const verifyVaultPin = async (req, res) => {
+  try {
+    const { pin } = req.body;
+    const user = await User.findById(req.userId);
+    
+    if (!user.vaultPin) return res.status(400).json({ msg: "No PIN set" });
+
+    const isMatch = await bcrypt.compare(pin, user.vaultPin);
+    if (!isMatch) return res.status(400).json({ msg: "Incorrect PIN" });
+
+    res.json({ success: true, msg: "PIN Verified" });
+  } catch (err) {
+    res.status(500).json({ msg: "Server error verifying PIN", error: err.message });
+  }
+};
+
+export const checkVaultStatus = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        res.json({ hasPin: !!user.vaultPin });
+    } catch (err) {
+        res.status(500).json({ msg: "Server error", error: err.message });
+    }
+};

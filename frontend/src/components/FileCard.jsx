@@ -1,5 +1,6 @@
 import { useState } from "react";
 import RenameModal from "./RenameModal";
+import { API_URL } from "../config";
 
 export default function FileCard({ 
   file, 
@@ -23,7 +24,9 @@ export default function FileCard({
   onWatermark,
   onConvertImage,
   onSplitPDF,
-  onCropImage
+  onCropImage,
+  isSelected,
+  onToggleSelect
 }) {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState(null);
@@ -48,6 +51,12 @@ export default function FileCard({
     <>
       <div className="file-card">
         {getFileThumbnail(file)}
+        
+        <div className="selection-overlay" onClick={(e) => { e.stopPropagation(); onToggleSelect(file._id); }}>
+            <div className={`checkbox ${isSelected ? 'checked' : ''}`}>
+                {isSelected && <i className="fas fa-check"></i>}
+            </div>
+        </div>
         
         <div className="file-details">
           <div className="file-header">
@@ -252,7 +261,7 @@ export default function FileCard({
               onMouseLeave={() => setActiveTooltip(null)}
             >
               <a 
-                href={`http://localhost:5000/api/docs/download/${file._id}`}
+                href={`${API_URL}/api/docs/download/${file._id}`}
                 download={file.filename}
                 className="action-btn download-btn"
               >
@@ -696,6 +705,30 @@ export default function FileCard({
             font-size: 10px;
             padding: 4px 8px;
           }
+        }
+
+        .selection-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            cursor: pointer;
+        }
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 2px solid rgba(255,255,255,0.8);
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.2s;
+        }
+        .checkbox.checked {
+            background: var(--brand-color, #0d9488);
+            border-color: var(--brand-color, #0d9488);
         }
       `}</style>
     </>

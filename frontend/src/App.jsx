@@ -45,6 +45,7 @@ import SharedFilePage from "./components/SharedFilePage";
 import CustomCursor from "./components/CustomCursor";
 import { ThemeProvider } from "./context/ThemeContext";
 import ThemeToggle from "./components/ThemeToggle";
+import { ToastProvider } from "./context/ToastContext";
 
 // ✅ Initialize Google Analytics (GA4)
 const TRACKING_ID = "G-N4367HGXZZ"; // Replace with your actual GA4 measurement ID
@@ -75,26 +76,28 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <CustomCursor />
-        <ThemeToggle />
-      <TrackPageView />
-      <Routes>
-        <Route path="/" element={<MainPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <DashboardPage />
-            </PrivateRoute>
-          }
-        />
-        <Route path="/share/:token" element={<SharedFilePage />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <CustomCursor />
+          <ThemeToggle />
+        <TrackPageView />
+        <Routes>
+          <Route path="/" element={<MainPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            }
+          />
+          <Route path="/share/:token" element={<SharedFilePage />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+        </BrowserRouter>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

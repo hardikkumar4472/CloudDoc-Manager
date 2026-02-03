@@ -144,7 +144,7 @@ export default function CustomCursor() {
           height: 8px;
           background-color: var(--accent-color);
           border-radius: 50%;
-          z-index: 9999;
+          z-index: 2147483647; /* Ensure highest z-index */
           pointer-events: none;
           transform: translate(-50%, -50%);
           box-shadow: 0 0 10px var(--accent-color);
@@ -160,7 +160,7 @@ export default function CustomCursor() {
           height: 40px;
           border: 1px solid var(--accent-color);
           border-radius: 50%;
-          z-index: 9998;
+          z-index: 2147483646;
           pointer-events: none;
           transform: translate(-50%, -50%);
           transition: width 0.2s, height 0.2s, background-color 0.2s, opacity 0.3s ease;
@@ -175,7 +175,7 @@ export default function CustomCursor() {
           height: 400px;
           background: radial-gradient(circle, var(--accent-glow) 0%, rgba(0, 0, 0, 0) 70%);
           border-radius: 50%;
-          z-index: 9997; /* Behind dot/outline but on top of content */
+          z-index: 2147483645;
           pointer-events: none;
           transform: translate(-50%, -50%);
           mix-blend-mode: screen; /* Helps it glow over dark backgrounds */

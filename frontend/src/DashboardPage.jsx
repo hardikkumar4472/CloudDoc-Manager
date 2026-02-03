@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "./config";
 import Header from "./components/Header";
 import UploadSection from "./components/UploadSection";
 import FilesSection from "./components/FilesSection";
@@ -11,8 +12,17 @@ import DownloadImageAsPDF from "./components/DownloadImageasPDF";
 import EmailModal from "./components/EmailModal";
 import CompressModal from "./components/CompressModal";
 import CropModal from "./components/CropModal";
+import PullToRefresh from "./components/PullToRefresh";
+import VaultPinModal from "./components/VaultPinModal";
+import SplitPdfModal from "./components/SplitPdfModal";
+import WatermarkModal from "./components/WatermarkModal";
+import FileExpiryModal from "./components/FileExpiryModal";
+import ImageConvertModal from "./components/ImageConvertModal";
+
+import { useToast } from "./context/ToastContext";
 
 export default function DashboardPage() {
+  const { addToast } = useToast();
   const [files, setFiles] = useState([]);
   const [file, setFile] = useState(null);
   const [versionFile, setVersionFile] = useState(null);
@@ -35,6 +45,25 @@ export default function DashboardPage() {
   const [emailFile, setEmailFile] = useState(null);
   const [compressFile, setCompressFile] = useState(null);
   const [cropFile, setCropFile] = useState(null);
+  const [splitFile, setSplitFile] = useState(null);
+  const [showSplitModal, setShowSplitModal] = useState(false);
+
+  const [watermarkFile, setWatermarkFile] = useState(null);
+  const [showWatermarkModal, setShowWatermarkModal] = useState(false);
+
+  const [expiryFile, setExpiryFile] = useState(null);
+  const [showExpiryModal, setShowExpiryModal] = useState(false);
+
+  const [convertFile, setConvertFile] = useState(null);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+
+  const [selectedFileIds, setSelectedFileIds] = useState([]);
+  
+  // Vault Logic
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [hasPin, setHasPin] = useState(false);
+  const [pinMode, setPinMode] = useState("verify");
+
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
@@ -49,7 +78,7 @@ export default function DashboardPage() {
 
   const fetchFiles = async (filter = activeFilter) => {
     try {
-      let url = "http://localhost:5000/api/docs";
+      let url = `${API_URL}/api/docs`;
       if (filter === 'vault') {
           url += "?vault=true";
       }
@@ -75,11 +104,23 @@ export default function DashboardPage() {
     }
     fetchFiles(activeFilter);
     fetchUserProfile();
+    checkVaultStatus();
   }, [navigate, token, activeFilter]);
+
+  const checkVaultStatus = async () => {
+      try {
+          const res = await axios.get(`${API_URL}/api/auth/vault/status`, {
+              headers: { Authorization: `Bearer ${token}` }
+          });
+          setHasPin(res.data.hasPin);
+      } catch (error) {
+          console.error("Vault status error", error);
+      }
+  };
 
   const fetchUserProfile = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/auth/profile", {
+      const res = await axios.get(`${API_URL}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(res.data);
@@ -96,7 +137,7 @@ export default function DashboardPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      await axios.post("http://localhost:5000/api/docs/upload", formData, {
+      await axios.post(`${API_URL}/api/docs/upload`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -107,9 +148,16 @@ export default function DashboardPage() {
       fetchFiles();
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Upload failed. Please try again.");
+      addToast("Upload failed. Please try again.", 'error');
     }
     setUploading(false);
+  };
+  
+  const handleToggleSelect = (id) => {
+      setSelectedFileIds(prev => {
+          if (prev.includes(id)) return prev.filter(i => i !== id);
+          return [...prev, id];
+      });
   };
 
   const handleNewVersionUpload = async () => {
@@ -120,7 +168,7 @@ export default function DashboardPage() {
       const formData = new FormData();
       formData.append("file", versionFile);
 
-      await axios.post(`http://localhost:5000/api/docs/${selectedFile._id}/version`, formData, {
+      await axios.post(`${API_URL}/api/docs/${selectedFile._id}/version`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -140,7 +188,7 @@ export default function DashboardPage() {
   const handleShareFile = async (fileId, expiresIn) => {
     try {
       const response = await axios.post(
-        `http://localhost:5000/api/docs/share/${fileId}`,
+        `${API_URL}/api/docs/share/${fileId}`,
         { expiresIn },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -154,7 +202,7 @@ export default function DashboardPage() {
   const handleRevokeShare = async (fileId) => {
     try {
       await axios.post(
-        `http://localhost:5000/api/docs/share/revoke/${fileId}`,
+        `${API_URL}/api/docs/share/revoke/${fileId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -168,11 +216,11 @@ export default function DashboardPage() {
   const handleSendEmail = async (fileId, emailData) => {
     try {
       const response = await axios.post(
-        `http://localhost:5000/api/docs/${fileId}/send-email`,
+        `${API_URL}/api/docs/${fileId}/send-email`,
         emailData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert("Email sent successfully!");
+      addToast("Email sent successfully!", 'success');
       return response;
     } catch (error) {
       console.error("Error sending email:", error);
@@ -183,7 +231,7 @@ export default function DashboardPage() {
   const handleCompressPDF = async (fileId, level) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/docs/compress/${fileId}?level=${level}`,
+        `${API_URL}/api/docs/compress/${fileId}?level=${level}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -201,20 +249,21 @@ export default function DashboardPage() {
       setShowCompressModal(false);
     } catch (error) {
       console.error("PDF compression error:", error);
-      alert("Failed to compress PDF.");
+      addToast("Failed to compress PDF.", 'error');
     }
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this document?")) return;
     setDeletingId(id);
     try {
-      await axios.delete(`http://localhost:5000/api/docs/${id}`, {
+      await axios.delete(`${API_URL}/api/docs/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
     } catch (error) {
       console.error("Delete error:", error);
-      alert("Delete failed. Please try again.");
+      addToast("Delete failed. Please try again.", 'error');
     }
     setDeletingId(null);
   };
@@ -222,13 +271,13 @@ export default function DashboardPage() {
   const handleToggleFavorite = async (id) => {
     setTogglingId(id);
     try {
-      await axios.patch(`http://localhost:5000/api/docs/${id}/favorite`, {}, {
+      await axios.patch(`${API_URL}/api/docs/${id}/favorite`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
     } catch (error) {
       console.error("Favorite toggle error:", error);
-      alert("Failed to update favorite status.");
+      addToast("Failed to update favorite status.", 'error');
     }
     setTogglingId(null);
   };
@@ -236,33 +285,33 @@ export default function DashboardPage() {
   const handleTogglePin = async (id) => {
     setTogglingId(id);
     try {
-      await axios.patch(`http://localhost:5000/api/docs/${id}/pin`, {}, {
+      await axios.patch(`${API_URL}/api/docs/${id}/pin`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles();
     } catch (error) {
       console.error("Pin toggle error:", error);
-      alert("Failed to update pin status.");
+      addToast("Failed to update pin status.", 'error');
     }
     setTogglingId(null);
   };
 
   const handleRestoreVersion = async (fileId, versionNumber) => {
     try {
-      await axios.post(`http://localhost:5000/api/docs/${fileId}/restore/${versionNumber}`, {}, {
+      await axios.post(`${API_URL}/api/docs/${fileId}/restore/${versionNumber}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowVersions(false);
       fetchFiles();
     } catch (error) {
       console.error("Restore version error:", error);
-      alert("Failed to restore version.");
+      addToast("Failed to restore version.", 'error');
     }
   };
 
   const handleRename = async (id, newName) => {
     try {
-      await axios.put(`http://localhost:5000/api/docs/rename/${id}`, 
+      await axios.put(`${API_URL}/api/docs/rename/${id}`,  
         { newName },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -270,7 +319,7 @@ export default function DashboardPage() {
       return true;
     } catch (error) {
       console.error("Rename error:", error);
-      alert("Rename failed. Please try again.");
+      addToast("Rename failed. Please try again.", 'error');
       return false;
     }
   };
@@ -283,7 +332,7 @@ export default function DashboardPage() {
       if (quality) params.append('quality', quality);
       
       const response = await axios.get(
-        `http://localhost:5000/api/docs/download/${fileId}/resize?${params.toString()}`,
+        `${API_URL}/api/docs/download/${fileId}/resize?${params.toString()}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -301,7 +350,7 @@ export default function DashboardPage() {
       setShowResize(false);
     } catch (error) {
       console.error("Resize image error:", error);
-      alert("Failed to resize image.");
+      addToast("Failed to resize image.", 'error');
     }
   };
 
@@ -312,7 +361,7 @@ export default function DashboardPage() {
     }
     
     try {
-      const res = await axios.get(`http://localhost:5000/api/docs/search?query=${encodeURIComponent(query)}`, {
+      const res = await axios.get(`${API_URL}/api/docs/search?query=${encodeURIComponent(query)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFiles(res.data);
@@ -423,35 +472,44 @@ export default function DashboardPage() {
 
   const handleToggleVault = async (id) => {
     try {
-      await axios.patch(`http://localhost:5000/api/docs/${id}/vault`, {}, {
+      await axios.patch(`${API_URL}/api/docs/${id}/vault`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchFiles(activeFilter);
     } catch (error) {
       console.error("Vault toggle error:", error);
-      alert("Failed to update vault status.");
+      addToast("Failed to update vault status.", 'error');
     }
   };
 
-  const handleSetExpiry = async (id) => {
-      const hours = prompt("Enter expiry hours (0 to remove):", "24");
-      if (hours === null) return;
+  const handleSetExpiry = (file) => {
+    // Check if we passed ID or full object
+    const fileObj = typeof file === 'string' ? files.find(f => f._id === file) : file;
+    setExpiryFile(fileObj);
+    setShowExpiryModal(true);
+  };
+
+  const handleConfirmExpiry = async (id, hours) => {
       try {
-          await axios.patch(`http://localhost:5000/api/docs/${id}/expiry`, { hours: parseInt(hours) }, {
+          await axios.patch(`${API_URL}/api/docs/${id}/expiry`, { hours: parseInt(hours) }, {
              headers: { Authorization: `Bearer ${token}` }
           });
           fetchFiles(activeFilter);
-          alert("Expiry updated");
+          addToast("Expiry updated", 'success');
       } catch (error) {
-          alert("Failed to set expiry");
+          addToast("Failed to set expiry", 'error');
       }
   };
 
-  const handleWatermark = async (id) => {
-      const text = prompt("Enter watermark text:", "CONFIDENTIAL");
-      if (!text) return;
+  const handleWatermark = (file) => {
+      const fileObj = typeof file === 'string' ? files.find(f => f._id === file) : file;
+      setWatermarkFile(fileObj);
+      setShowWatermarkModal(true);
+  };
+
+  const handleConfirmWatermark = async (id, text) => {
       try {
-          const response = await axios.post(`http://localhost:5000/api/docs/watermark/${id}`, { text }, {
+          const response = await axios.post(`${API_URL}/api/docs/watermark/${id}`, { text }, {
               headers: { Authorization: `Bearer ${token}` },
               responseType: 'blob'
           });
@@ -463,16 +521,21 @@ export default function DashboardPage() {
           document.body.appendChild(link);
           link.click();
           link.remove();
+          addToast("Watermark applied!", "success");
       } catch (error) {
-          alert("Failed to watermark");
+          addToast("Failed to watermark", 'error');
       }
   };
 
-  const handleConvertImage = async (id) => {
-      const format = prompt("Enter format (webp, png, jpeg):", "webp");
-      if (!format) return;
+  const handleConvertImage = (file) => {
+      const fileObj = typeof file === 'string' ? files.find(f => f._id === file) : file;
+      setConvertFile(fileObj);
+      setShowConvertModal(true);
+  };
+
+  const handleConfirmConvert = async (id, format) => {
       try {
-          const response = await axios.post(`http://localhost:5000/api/docs/convert/${id}`, { format }, {
+          const response = await axios.post(`${API_URL}/api/docs/convert/${id}`, { format }, {
               headers: { Authorization: `Bearer ${token}` },
               responseType: 'blob'
           });
@@ -483,14 +546,118 @@ export default function DashboardPage() {
           document.body.appendChild(link);
           link.click();
           link.remove();
+          addToast("Image converted successfully!", "success");
       } catch (error) {
-          alert("Failed to convert");
+          addToast("Failed to convert image", 'error');
       }
   };
 
   // Placeholders for complex UI modals (Split/Crop/Merge)
-  const handleSplitPDF = (file) => alert("Split PDF feature coming soon (UI pending)");
-  const handleMergePDFs = (fileIds) => alert("Merge PDF feature coming soon (UI pending)");
+  const handleSplitPDF = (file) => {
+    setSplitFile(file);
+    setShowSplitModal(true);
+  };
+  
+  const handleConfirmSplit = async (fileId, range) => {
+      try {
+          const response = await axios.post(`${API_URL}/api/docs/split/${fileId}`, 
+            { ranges: range }, 
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              responseType: 'blob'
+            }
+          );
+          
+          // Auto download split file (zip or single pdf based on backend)
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `split-${splitFile.filename}.zip`); // Assuming backend zips multiple parts
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          
+          addToast("PDF split successfully!", "success");
+      } catch (error) {
+          console.error("Split error:", error);
+          addToast("Failed to split PDF. Check page ranges.", "error");
+      }
+  };
+
+  const handleMergePDFs = async (fileIds) => {
+      try {
+          const response = await axios.post(`${API_URL}/api/docs/merge`, { docIds: fileIds }, {
+              headers: { Authorization: `Bearer ${token}` },
+              responseType: 'blob'
+          });
+          
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `merged-document.pdf`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          
+          setSelectedFileIds([]); // Clear selection
+      } catch (error) {
+          console.error("Merge error:", error);
+          addToast("Failed to merge PDFs. Ensure they are valid PDF files.", 'error');
+      }
+  };
+
+  const handleExportAll = async () => {
+    try {
+      addToast("Preparing your archive... this may take a moment", "info");
+      const response = await axios.get(`${API_URL}/api/docs/download-all`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+        timeout: 60000 // 1 minute timeout for large exports
+      });
+      
+      console.log("Export Response Size:", response.data.size);
+
+      if (!response.data || response.data.size === 0) {
+          throw new Error("Received an empty file from the server.");
+      }
+
+      const url = window.URL.createObjectURL(response.data);
+      
+      const link = document.createElement('a');
+      link.style.display = 'none';
+      link.href = url;
+      link.setAttribute('download', `CloudDoc_Export_${new Date().getTime()}.zip`);
+      
+      document.body.appendChild(link);
+      
+      // Force a manual click
+      try {
+          link.click();
+      } catch (err) {
+          console.error("Direct click failed, trying manual event", err);
+          const clickEvent = new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true
+          });
+          link.dispatchEvent(clickEvent);
+      }
+      
+      // Cleanup
+      setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          if (document.body.contains(link)) {
+              document.body.removeChild(link);
+          }
+      }, 1000);
+      
+      addToast("Export complete! Your download should start shortly.", "success");
+    } catch (error) {
+      console.error("Export error:", error);
+      const errorMsg = error.response?.data?.msg || error.message || "Failed to export files.";
+      addToast(errorMsg, "error");
+    }
+  };
 
   const handleCropImage = (fileId) => {
       // Find full file object to get URL
@@ -503,7 +670,7 @@ export default function DashboardPage() {
 
   const handleConfirmCrop = async (id, width, height, left, top) => {
       try {
-          const response = await axios.post(`http://localhost:5000/api/docs/crop/${id}`, 
+          const response = await axios.post(`${API_URL}/api/docs/crop/${id}`, 
             { width: parseInt(width), height: parseInt(height), left: parseInt(left), top: parseInt(top) }, 
             {
               headers: { Authorization: `Bearer ${token}` },
@@ -524,56 +691,97 @@ export default function DashboardPage() {
           setCropFile(null);
       } catch (error) {
           console.error("Crop error:", error);
-          alert("Failed to crop image. Ensure crop is within bounds.");
+          addToast("Failed to crop image. Ensure crop is within bounds.", 'error');
       }
   };
 
   return (
     <div className="dashboard-container">
-      <Header user={user} handleLogout={handleLogout} />
+      {/* 3D Background Elements matching MainPage */}
+      <div className="bg-3d-layer">
+          <div className="shape shape-1"></div>
+          <div className="shape shape-2"></div>
+      </div>
+      <div className="bg-gradient-mesh"></div>
+
+      <Header user={user} handleLogout={handleLogout} onUpdateUser={fetchUserProfile} />
       
       <div className="dashboard-content">
-        <UploadSection 
-          file={file} 
-          setFile={setFile} 
-          uploading={uploading} 
-          handleUpload={handleUpload} 
-        />
-        
-        <FilesSection
-          files={filteredFiles}
-          search={search}
-          setSearch={setSearch}
-          activeFilter={activeFilter}
-          setActiveFilter={setActiveFilter}
-          deletingId={deletingId}
-          togglingId={togglingId}
-          handleDelete={handleDelete}
-          handleToggleFavorite={handleToggleFavorite}
-          handleTogglePin={handleTogglePin}
-          handleSearch={handleSearch}
-          formatDate={formatDate}
-          formatFileSize={formatFileSize}
-          getFileThumbnail={getFileThumbnail}
-          handleRename={handleRename}
-          onViewVersions={onViewVersions}
-          onResizeImage={onResizeImage}
-          onShareFile={(file) => {
-              setSharingFile(file);
-              setShowShare(true);
-          }}
-          onDownloadAsPdf={onDownloadAsPdf}
-          onSendEmail={onSendEmail}
-          onCompressPDF={onCompressPDF}
-          
-          // New Features
-          onToggleVault={handleToggleVault}
-          onSetExpiry={handleSetExpiry}
-          onWatermark={handleWatermark}
-          onConvertImage={handleConvertImage}
-          onSplitPDF={handleSplitPDF}
-          onCropImage={handleCropImage}
-        />
+        <PullToRefresh onRefresh={() => fetchFiles(activeFilter)}>
+          <div className="dashboard-main-grid">
+            <div className="content-area">
+              <FilesSection
+                files={filteredFiles}
+                search={search}
+                setSearch={setSearch}
+                activeFilter={activeFilter}
+                setActiveFilter={(filter) => {
+                    if (filter === 'vault') {
+                        if (activeFilter === 'vault') {
+                            setActiveFilter('all');
+                        } else {
+                            // Check PIN logic
+                            setPinMode(hasPin ? "verify" : "set");
+                            setShowPinModal(true);
+                        }
+                    } else {
+                        setActiveFilter(filter);
+                    }
+                }}
+                deletingId={deletingId}
+                togglingId={togglingId}
+                handleDelete={handleDelete}
+                handleToggleFavorite={handleToggleFavorite}
+                handleTogglePin={handleTogglePin}
+                handleSearch={handleSearch}
+                formatDate={formatDate}
+                formatFileSize={formatFileSize}
+                getFileThumbnail={getFileThumbnail}
+                handleRename={handleRename}
+                onViewVersions={onViewVersions}
+                onResizeImage={onResizeImage}
+                onShareFile={(file) => {
+                    setSharingFile(file);
+                    setShowShare(true);
+                }}
+                onDownloadAsPdf={onDownloadAsPdf}
+                onSendEmail={onSendEmail}
+                onCompressPDF={onCompressPDF}
+                
+                // New Features
+                onToggleVault={handleToggleVault}
+                onSetExpiry={handleSetExpiry}
+                onWatermark={handleWatermark}
+                onConvertImage={handleConvertImage}
+                onSplitPDF={handleSplitPDF}
+                onCropImage={handleCropImage}
+                selectedFileIds={selectedFileIds}
+                onToggleSelect={handleToggleSelect}
+                onMergePDFs={handleMergePDFs}
+                onExportAll={handleExportAll}
+              />
+            </div>
+
+            <div className="sidebar-area">
+              <UploadSection 
+                file={file} 
+                setFile={setFile} 
+                uploading={uploading} 
+                handleUpload={handleUpload} 
+              />
+              
+              {/* Optional: Add storage info or tips here later */}
+              <div className="sidebar-card info-card">
+                  <h4>Quick Tips</h4>
+                  <ul>
+                      <li><i className="fas fa-lightbulb"></i> Use the vault for extra security</li>
+                      <li><i className="fas fa-compress-arrows-alt"></i> Compress PDFs to save space</li>
+                      <li><i className="fas fa-magic"></i> Watermark files before sharing</li>
+                  </ul>
+              </div>
+            </div>
+          </div>
+        </PullToRefresh>
 
         {showVersions && selectedFile && (
           <VersionModal
@@ -653,14 +861,18 @@ export default function DashboardPage() {
       </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css');
         
         * {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
-          font-family: 'Poppins', sans-serif;
+          font-family: 'DM Sans', sans-serif;
+        }
+
+        :root {
+            --brand-color: #0d9488;
         }
         
         html, body, #root {
@@ -673,20 +885,132 @@ export default function DashboardPage() {
         
         .dashboard-container {
           min-height: 100vh;
-          background: var(--bg-gradient);
+          /* background: var(--bg-gradient); Removed to show mesh */
           color: var(--text-primary);
           width: 100%;
           margin: 0;
           padding: 0;
-          transition: background 0.5s ease;
+          position: relative;
+        }
+
+        .bg-3d-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bg-gradient-mesh {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            /* Simple mesh gradient */
+            background: 
+                radial-gradient(at 0% 0%, rgba(13, 148, 136, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(13, 148, 136, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(162, 28, 175, 0.05) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+        }
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: floatShape 20s infinite linear;
+        }
+        .shape-1 {
+            width: 400px; height: 400px;
+            background: #ccfbf1;
+            top: -100px; left: -100px;
+            animation-duration: 25s;
+        }
+        .shape-2 {
+            width: 300px; height: 300px;
+            background: #e0f2fe;
+            bottom: 10%; right: -50px;
+            animation-duration: 30s;
+            animation-direction: reverse;
+        }
+        @keyframes floatShape {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(30px, -50px) rotate(180deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
         }
         
         .dashboard-content {
-          max-width: 1200px;
+          max-width: 1400px; /* Wider for 2-column layout */
           margin: 0 auto;
           padding: 30px 20px;
           width: 100%;
           box-sizing: border-box;
+          position: relative;
+          z-index: 2;
+        }
+
+        .dashboard-main-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 32px;
+            align-items: start;
+        }
+
+        .content-area {
+            min-width: 0; /* Prevents flex/grid overflow with files-grid */
+        }
+
+        .sidebar-area {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            position: sticky;
+            top: 30px;
+        }
+
+        .sidebar-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            padding: 24px;
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .info-card h4 {
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-card li {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-card li i {
+            color: var(--accent-color);
+            width: 16px;
+        }
+
+        @media (max-width: 1100px) {
+            .dashboard-main-grid {
+                grid-template-columns: 1fr;
+            }
+            .sidebar-area {
+                position: static;
+                order: -1; /* Keep upload on top in mobile */
+            }
         }
         
         @media (max-width: 768px) {
@@ -695,6 +1019,47 @@ export default function DashboardPage() {
           }
         }
       `}</style>
+        <VaultPinModal
+            isOpen={showPinModal}
+            mode={pinMode}
+            onClose={() => setShowPinModal(false)}
+            onSuccess={() => {
+                if (pinMode === 'set') {
+                    setHasPin(true);
+                    addToast("PIN set! You can now access the vault.", 'success');
+                } else {
+                    setActiveFilter('vault');
+                }
+            }}
+        />
+
+        <SplitPdfModal
+            isOpen={showSplitModal}
+            file={splitFile}
+            onClose={() => setShowSplitModal(false)}
+            onSplit={handleConfirmSplit}
+        />
+
+        <WatermarkModal
+            isOpen={showWatermarkModal}
+            file={watermarkFile}
+            onClose={() => setShowWatermarkModal(false)}
+            onConfirm={handleConfirmWatermark}
+        />
+
+        <FileExpiryModal
+            isOpen={showExpiryModal}
+            file={expiryFile}
+            onClose={() => setShowExpiryModal(false)}
+            onConfirm={handleConfirmExpiry}
+        />
+
+        <ImageConvertModal
+            isOpen={showConvertModal}
+            file={convertFile}
+            onClose={() => setShowConvertModal(false)}
+            onConfirm={handleConfirmConvert}
+        />
     </div>
   );
 }

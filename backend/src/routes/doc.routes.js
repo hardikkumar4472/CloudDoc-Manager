@@ -22,13 +22,15 @@ import {
   convertImageFormat,
   cropImage,
   toggleVault,
-  setFileExpiry
+  setFileExpiry,
+  downloadAllFiles
 } from "../controllers/doc.controller.js";
 import { authMiddleware } from "../middleware/auth.js";
 import upload from "../middleware/multer.js";
 const router = express.Router();
 router.post("/upload", authMiddleware, upload.single("file"), uploadFile);
 router.get("/", authMiddleware, getFiles);
+router.get("/download-all", authMiddleware, downloadAllFiles);
 router.get("/view/:id", authMiddleware, viewFile);
 router.get("/download/:id",  downloadFile);
 router.delete("/:id", authMiddleware, deleteFile);

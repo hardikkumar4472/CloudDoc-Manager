@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "./context/ThemeContext";
+import { API_URL } from "./config";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -15,59 +16,30 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { theme } = useTheme();
 
-  // Background particle effect
-  useEffect(() => {
-    const canvas = document.getElementById('particle-canvas');
-    if (!canvas) return;
+  // 3D Tilt Logic
+  const handleCardMove = (e) => {
+    const card = e.currentTarget;
+    const { left, top, width, height } = card.getBoundingClientRect();
+    const x = (e.clientX - left) / width;
+    const y = (e.clientY - top) / height;
     
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
-    const particles = [];
-    const particleCount = 80;
-    
-    const particleColor = theme === 'dark' ? 'rgba(100, 150, 255,' : 'rgba(0, 119, 204,';
-    
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        radius: Math.random() * 2 + 1,
-        speed: Math.random() * 0.5 + 0.2,
-        opacity: Math.random() * 0.5 + 0.1
-      });
-    }
-    
-    function drawParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      particles.forEach(particle => {
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `${particleColor} ${particle.opacity})`;
-        ctx.fill();
-        
-        particle.y -= particle.speed;
-        if (particle.y < 0) {
-          particle.y = canvas.height;
-          particle.x = Math.random() * canvas.width;
-        }
-      });
-      
-      requestAnimationFrame(drawParticles);
-    }
-    
-    drawParticles();
-    
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [theme]);
+    const rotateX = (0.5 - y) * 20;
+    const rotateY = (x - 0.5) * 20;
+    const glareX = x * 100;
+    const glareY = y * 100;
+
+    card.style.setProperty('--rotX', `${rotateX}deg`);
+    card.style.setProperty('--rotY', `${rotateY}deg`);
+    card.style.setProperty('--mx', `${glareX}%`);
+    card.style.setProperty('--my', `${glareY}%`);
+  };
+
+  const handleCardLeave = (e) => {
+    e.currentTarget.style.setProperty('--rotX', '0deg');
+    e.currentTarget.style.setProperty('--rotY', '0deg');
+    e.currentTarget.style.setProperty('--mx', '50%');
+    e.currentTarget.style.setProperty('--my', '50%');
+  };
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -75,7 +47,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", form);
+      const res = await axios.post(`${API_URL}/api/auth/login`, form);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/dashboard");
@@ -98,7 +70,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/request-reset", {
+      const res = await axios.post(`${API_URL}/api/auth/request-reset`, {
         email: resetEmail,
       });
       setMessage(res.data.msg);
@@ -115,7 +87,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setMessage("");
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/reset-password", {
+      const res = await axios.post(`${API_URL}/api/auth/reset-password`, {
         email: resetEmail,
         otp: resetOtp,
         newPassword,
@@ -155,9 +127,12 @@ export default function LoginPage() {
 
   return (
     <div className="login-container">
-      {/* Background elements */}
-      <canvas id="particle-canvas" className="particle-background"></canvas>
-      <div className="glow-effect"></div>
+      {/* 3D Background Elements matching MainPage */}
+      <div className="bg-3d-layer">
+          <div className="shape shape-1"></div>
+          <div className="shape shape-2"></div>
+      </div>
+      <div className="bg-gradient-mesh"></div>
       
       {/* Main content */}
       <div className="login-content-wrapper">
@@ -165,7 +140,11 @@ export default function LoginPage() {
           <i className="fas fa-arrow-left"></i> Back to Home
         </Link>
         
-        <div className="login-card">
+        <div 
+          className="login-card"
+          onMouseMove={handleCardMove}
+          onMouseLeave={handleCardLeave}
+        >
           <div className="logo">
             <div className="logo-icon">
               <i className="fas fa-cloud-upload-alt"></i>
@@ -339,7 +318,20 @@ export default function LoginPage() {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
-          font-family: 'Poppins', sans-serif;
+          font-family: 'DM Sans', sans-serif;
+        }
+        
+        :root {
+            --brand-color: #0d9488;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --input-bg: rgba(255, 255, 255, 0.6);
+            --border-color: #e2e8f0;
+            --accent-color: #0d9488;
+            --accent-hover: #0f766e;
+            --accent-glow: rgba(13, 148, 136, 0.4);
+            --card-bg: rgba(255, 255, 255, 0.9);
         }
         
         html, body, #root {
@@ -350,7 +342,7 @@ export default function LoginPage() {
         .login-container {
           min-height: 100vh;
           width: 100%;
-          background: var(--bg-gradient);
+          background: transparent;
           color: var(--text-primary);
           position: relative;
           overflow: hidden;
@@ -360,24 +352,49 @@ export default function LoginPage() {
           padding: 20px;
         }
         
-        .particle-background {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: 0;
+        .bg-3d-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
         }
-        
-        .glow-effect {
-          position: fixed;
-          width: 500px;
-          height: 500px;
-          background: radial-gradient(circle, var(--accent-glow) 0%, rgba(0, 0, 0, 0) 70%);
-          top: -250px;
-          right: -250px;
-          z-index: 1;
-          opacity: 0.5;
+        .bg-gradient-mesh {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            /* Simple mesh gradient */
+            background: 
+                radial-gradient(at 0% 0%, rgba(13, 148, 136, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(13, 148, 136, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(162, 28, 175, 0.05) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+        }
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: floatShape 20s infinite linear;
+        }
+        .shape-1 {
+            width: 400px; height: 400px;
+            background: #ccfbf1;
+            top: -100px; left: -100px;
+            animation-duration: 25s;
+        }
+        .shape-2 {
+            width: 300px; height: 300px;
+            background: #e0f2fe;
+            bottom: 10%; right: -50px;
+            animation-duration: 30s;
+            animation-direction: reverse;
+        }
+        @keyframes floatShape {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(30px, -50px) rotate(180deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
         }
         
         .login-content-wrapper {
@@ -412,14 +429,46 @@ export default function LoginPage() {
         }
         
         .login-card {
-          background: var(--card-bg);
-          backdrop-filter: blur(60px);
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(20px);
           border-radius: 20px;
           padding: 40px;
           width: 100%;
-          border: 1px solid var(--border-color);
-          box-shadow: var(--shadow-lg);
-          animation: fadeInUp 0.8s ease;
+          border: 1px solid rgba(255, 255, 255, 0.6);
+          box-shadow: 
+                0 40px 80px -20px rgba(0,0,0,0.2),
+                0 0 0 1px rgba(255,255,255,0.6) inset;
+          
+          /* 3D Transform Properties */
+          transform-style: preserve-3d;
+          perspective: 1000px;
+          transform: rotateX(var(--rotX, 0deg)) rotateY(var(--rotY, 0deg));
+          transition: transform 0.1s ease-out;
+          position: relative;
+        }
+        
+        /* Glare Effect */
+        .login-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            background: radial-gradient(
+                circle at var(--mx, 50%) var(--my, 50%), 
+                rgba(255,255,255,0.4) 0%, 
+                rgba(255,255,255,0) 60%
+            );
+            opacity: 1;
+            z-index: 20;
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        /* Ensure form contents are on top of glare */
+        .login-card > * { 
+            position: relative; 
+            z-index: 30; 
+            transform: translateZ(20px); /* Pop out contents */
         }
         
         .logo {

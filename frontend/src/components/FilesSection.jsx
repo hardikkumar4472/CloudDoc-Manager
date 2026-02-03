@@ -28,12 +28,58 @@ export default function FilesSection({
   onWatermark,
   onConvertImage,
   onSplitPDF,
-  onCropImage
+  onCropImage,
+  selectedFileIds = [],
+  onToggleSelect,
+  onMergePDFs,
+  onExportAll
 }) {
+  const selectedPDFCount = files.filter(f => selectedFileIds.includes(f._id) && f.filename.toLowerCase().endsWith('.pdf')).length;
   return (
     <div className="files-section">
       <div className="section-header">
-        <h3>Your Documents</h3>
+        <div className="section-title-wrapper">
+            <div className="title-info">
+                <div className="main-heading">
+                    <h3><i className="fas fa-folder-open"></i> Your Documents</h3>
+                </div>
+                <div className="stats-badges">
+                    <span className="file-count-badge">
+                        <i className="fas fa-file"></i> {files.length} {files.length === 1 ? 'Item' : 'Items'}
+                    </span>
+                </div>
+            </div>
+            
+            <div className="actions-toolbar">
+                <div className="toolbar-glass">
+                    <button className="btn-premium btn-export" onClick={onExportAll} title="Download all files as ZIP">
+                        <div className="btn-content">
+                            <i className="fas fa-cloud-download-alt"></i>
+                            <span>Export All</span>
+                        </div>
+                        <div className="gloss-shine"></div>
+                    </button>
+                    
+                    {selectedPDFCount > 1 && (
+                        <div className="divider-v"></div>
+                    )}
+
+                    {selectedPDFCount > 1 && (
+                        <button 
+                          onClick={() => onMergePDFs(selectedFileIds.filter(id => files.find(f => f._id === id)?.filename.toLowerCase().endsWith('.pdf')))}
+                          className="btn-premium btn-merge"
+                        >
+                            <div className="btn-content">
+                                <i className="fas fa-layer-group"></i>
+                                <span>Merge {selectedPDFCount} PDFs</span>
+                            </div>
+                            <div className="gloss-shine"></div>
+                            <div className="badge-glow"></div>
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
         <div className="filters-search-container">
           <div className="filter-tabs">
             <button 
@@ -116,8 +162,10 @@ export default function FilesSection({
               onSetExpiry={onSetExpiry}
               onWatermark={onWatermark}
               onConvertImage={onConvertImage}
-              onSplitPDF={onSplitPDF}
-              onCropImage={onCropImage}
+               onSplitPDF={onSplitPDF}
+               onCropImage={onCropImage}
+               isSelected={selectedFileIds.includes(file._id)}
+               onToggleSelect={onToggleSelect}
             />
           ))}
         </div>
@@ -300,6 +348,165 @@ export default function FilesSection({
           .files-grid {
             grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
           }
+            grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+          }
+        }
+        
+        .section-title-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .title-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .main-heading {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+
+        .main-heading h3 {
+            font-size: 1.8rem !important;
+            font-weight: 800 !important;
+            margin: 0 !important;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .stats-badges {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .file-count-badge {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            background: var(--accent-glow);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toolbar-glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            padding: 6px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .divider-v {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+            margin: 0 4px;
+        }
+
+        .btn-premium {
+            position: relative;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            background: transparent;
+            padding: 0;
+        }
+
+        .btn-premium .btn-content {
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: white;
+            z-index: 2;
+            position: relative;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+        }
+
+        .btn-merge {
+            background: linear-gradient(135deg, #f43f5e, #be123c);
+            box-shadow: 0 4px 12px rgba(190, 18, 60, 0.25);
+        }
+
+        .gloss-shine {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+            pointer-events: none;
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .btn-export:hover { box-shadow: 0 6px 16px rgba(29, 78, 216, 0.4); }
+        .btn-merge:hover { box-shadow: 0 6px 16px rgba(190, 18, 60, 0.4); }
+
+        .btn-premium:active { transform: translateY(0); }
+
+        @media (max-width: 768px) {
+            .section-title-wrapper {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 16px;
+            }
+            .toolbar-glass {
+                width: 100%;
+                justify-content: center;
+            }
+            .btn-premium { flex: 1; }
         }
       `}</style>
     </div>

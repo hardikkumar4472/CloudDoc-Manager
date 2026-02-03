@@ -1,4 +1,8 @@
-export default function Header({ user, handleLogout }) {
+import { useState } from "react";
+import ProfileModal from "./ProfileModal";
+
+export default function Header({ user, handleLogout, onUpdateUser }) {
+  const [showModal, setShowModal] = useState(false);
   return (
     <header className="dashboard-header">
       <div className="header-content">
@@ -8,7 +12,7 @@ export default function Header({ user, handleLogout }) {
         </div>
         
         <div className="user-menu">
-          <div className="user-info">
+          <div className="user-info" onClick={() => setShowModal(true)}>
             <div className="user-avatar">
               <i className="fas fa-user"></i>
             </div>
@@ -22,6 +26,14 @@ export default function Header({ user, handleLogout }) {
           </button>
         </div>
       </div>
+      
+      {showModal && (
+        <ProfileModal 
+            user={user} 
+            onClose={() => setShowModal(false)} 
+            onUpdateUser={onUpdateUser}
+        />
+      )}
 
       <style>{`
         .dashboard-header {
@@ -94,11 +106,13 @@ export default function Header({ user, handleLogout }) {
           border-radius: 30px;
           border: 1px solid var(--border-color);
           transition: all 0.3s ease;
+          cursor: pointer;
         }
         
         .user-info:hover {
           border-color: var(--accent-color);
           box-shadow: 0 0 0 2px var(--accent-glow);
+          background: rgba(255,255,255,0.8);
         }
         
         .user-avatar {

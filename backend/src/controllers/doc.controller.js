@@ -5,6 +5,8 @@ import crypto from "crypto";
 import jsPDF from "jspdf";
 import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib';
 import { sendMail } from "../services/sendEmail.js";
+import archiver from "archiver";
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY 
@@ -548,7 +550,7 @@ export const mergePDFs = async (req, res) => {
 export const splitPDF = async (req, res) => {
     try {
       const { id } = req.params;
-      const { startPage, endPage } = req.body; // 1-based index
+      const { ranges } = req.body; // e.g. "1-3, 5, 8-10"
   
       const doc = await Document.findById(id);
       if (!doc) return res.status(404).json({ msg: "Document not found" });
@@ -558,17 +560,34 @@ export const splitPDF = async (req, res) => {
   
       const pdfDoc = await PDFDocument.load(Buffer.from(await data.arrayBuffer()));
       const newPdf = await PDFDocument.create();
-      
       const pageCount = pdfDoc.getPageCount();
-      const start = Math.max(0, parseInt(startPage) - 1);
-      const end = Math.min(pageCount - 1, parseInt(endPage) - 1);
       
-      const pageIndices = [];
-      for(let i=start; i<=end; i++) pageIndices.push(i);
+      const pageIndices = new Set();
 
-      if(pageIndices.length === 0) return res.status(400).json({ msg: "Invalid page range" });
+      const parts = ranges.split(',').map(p => p.trim()).filter(Boolean);
+      
+      for (const part of parts) {
+          if (part.includes('-')) {
+             const [startStr, endStr] = part.split('-').map(s => s.trim());
+             const start = Math.max(0, parseInt(startStr) - 1);
+             const end = Math.min(pageCount - 1, parseInt(endStr) - 1);
+             if (!isNaN(start) && !isNaN(end) && start <= end) {
+                 for(let i=start; i<=end; i++) pageIndices.add(i);
+             }
+          } else {
+             const pageNum = parseInt(part);
+             if (!isNaN(pageNum)) {
+                 const idx = Math.max(0, Math.min(pageCount - 1, pageNum - 1));
+                 pageIndices.add(idx);
+             }
+          }
+      }
+
+      const sortedIndices = Array.from(pageIndices).sort((a,b) => a - b);
+
+      if(sortedIndices.length === 0) return res.status(400).json({ msg: "Invalid page range" });
   
-      const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
+      const copiedPages = await newPdf.copyPages(pdfDoc, sortedIndices);
       copiedPages.forEach((page) => newPdf.addPage(page));
   
       const pdfBytes = await newPdf.save();
@@ -722,5 +741,75 @@ export const setFileExpiry = async (req, res) => {
         res.json({ msg: "Expiry updated", expiresAt: doc.expiresAt });
     } catch (error) {
         res.status(500).json({ msg: "Error setting expiry", error: error.message });
+    }
+};
+
+export const downloadAllFiles = async (req, res) => {
+    try {
+        const docs = await Document.find({ uploadedBy: req.userId });
+        
+        console.log(`[Export] Found ${docs?.length || 0} documents for user ${req.userId}`);
+
+        if (!docs || docs.length === 0) {
+            return res.status(404).json({ msg: "No files found to export" });
+        }
+
+        const archive = archiver('zip', {
+            zlib: { level: 9 }
+        });
+
+        // Listen for errors
+        archive.on('error', (err) => {
+            console.error("[Export] Archiver error:", err);
+            if (!res.headersSent) {
+                res.status(500).send({ msg: "Error creating zip", error: err.message });
+            }
+        });
+
+        const filename = `clouddoc-export-${Date.now()}.zip`;
+        res.status(200);
+        res.attachment(filename);
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+
+        archive.pipe(res);
+
+        for (const doc of docs) {
+            try {
+                console.log(`[Export] Adding file: ${doc.filename} (${doc.public_id})`);
+                const { data, error } = await supabase.storage.from("documents").download(doc.public_id);
+                if (error) {
+                    console.error(`[Export] Supabase download error for ${doc.filename}:`, error);
+                    continue;
+                }
+                if (data) {
+                    const buffer = Buffer.from(await data.arrayBuffer());
+                    archive.append(buffer, { name: doc.filename });
+                }
+            } catch (err) {
+                console.error(`[Export] Failed to archive ${doc.filename}:`, err);
+            }
+        }
+
+        // Listen for warnings (e.g. stat failures and other non-blocking errors)
+        archive.on('warning', (err) => {
+            if (err.code === 'ENOENT') {
+                console.warn("[Export] Archiver warning:", err);
+            } else {
+                console.error("[Export] Archiver warning err:", err);
+            }
+        });
+
+        console.log("[Export] Finalizing archive...");
+        await archive.finalize();
+        console.log("[Export] Archive finalized.");
+
+    } catch (error) {
+        console.error("[Export] Global export error:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ msg: "Error exporting files", error: error.message });
+        }
     }
 };

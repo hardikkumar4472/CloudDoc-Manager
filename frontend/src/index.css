@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
 /* Global Resets */
 html, body {
   margin: 0;
@@ -9,8 +11,10 @@ html, body {
 body {
   background: var(--bg-gradient);
   color: var(--text-primary);
-  line-height: 1.5;
+  line-height: 1.6; /* Improved line height */
   -webkit-font-smoothing: antialiased;
+  --font-primary: 'Outfit', 'Inter', sans-serif;
+  --font-heading: 'Space Grotesk', 'Inter', sans-serif;
 }
 [data-theme='dark'] {
   --bg-primary: #0f172a;
@@ -64,7 +68,12 @@ body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: var(--font-family);
+  font-family: var(--font-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
 }
 
 

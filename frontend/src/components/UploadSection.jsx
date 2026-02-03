@@ -72,51 +72,43 @@ export default function UploadSection({ file, setFile, uploading, handleUpload }
         .upload-card {
           background: var(--card-bg);
           backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-radius: 20px;
+          border-radius: 24px;
           border: 1px solid var(--border-color);
-          padding: 30px;
-          margin-bottom: 40px;
+          padding: 24px;
           width: 100%;
           box-sizing: border-box;
-          box-shadow: var(--shadow-md);
-          transition: transform 0.3s ease;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+          transition: all 0.3s ease;
         }
 
         .upload-card h3 {
-          margin-bottom: 25px;
+          margin-bottom: 20px;
           color: var(--text-primary);
-          font-weight: 600;
-          font-size: 1.25rem;
+          font-weight: 700;
+          font-size: 1.1rem;
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
+          letter-spacing: -0.02em;
         }
         
         .upload-card h3::before {
           content: '';
           display: block;
           width: 4px;
-          height: 20px;
+          height: 18px;
           background: linear-gradient(to bottom, var(--accent-color), var(--accent-hover));
-          border-radius: 2px;
-        }
-        
-        .upload-area {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          width: 100%;
-          position: relative;
-        }
-        
-        .file-input-container {
-          width: 100%;
-          position: relative;
+          border-radius: 10px;
         }
         
         .file-input {
           display: none;
+        }
+
+        .upload-area {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
         }
         
         .file-input-label {
@@ -124,94 +116,84 @@ export default function UploadSection({ file, setFile, uploading, handleUpload }
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 15px;
-          padding: 40px 20px;
-          background: var(--input-bg);
+          gap: 12px;
+          padding: 30px 20px;
+          background: rgba(255, 255, 255, 0.02);
           border: 2px dashed var(--border-color);
-          border-radius: 16px;
+          border-radius: 20px;
           cursor: pointer;
-          transition: all 0.3s ease;
-          width: 100%;
-          box-sizing: border-box;
-          min-height: 180px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           text-align: center;
         }
         
         .file-input-label:hover {
-          background: var(--bg-secondary);
+          background: rgba(var(--accent-rgb, 59, 130, 246), 0.05);
           border-color: var(--accent-color);
           transform: translateY(-2px);
-          box-shadow: var(--shadow-sm);
         }
         
         .file-input-label i {
-          font-size: 3rem;
-          color: var(--accent-color);
-          opacity: 0.8;
-          transition: transform 0.3s ease;
-        }
-        
-        .file-input-label:hover i {
-          transform: scale(1.1);
-          opacity: 1;
+          font-size: 2.5rem;
+          background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          margin-bottom: 4px;
         }
         
         .file-input-label span {
           color: var(--text-secondary);
-          font-size: 1rem;
-          font-weight: 500;
+          font-size: 0.9rem;
+          font-weight: 600;
         }
         
-        .file-input-label span.filename {
+        .filename-v2 {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: var(--input-bg);
+          padding: 10px 16px;
+          border-radius: 14px;
+          border: 1px solid var(--border-color);
+          font-size: 0.85rem;
           color: var(--accent-color);
-          background: var(--accent-glow);
-          padding: 6px 16px;
-          border-radius: 20px;
-          font-size: 0.9rem;
+          max-width: 100%;
+          overflow: hidden;
+        }
+
+        .filename-v2 span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .upload-btn {
+          width: 100%;
+          padding: 14px;
+          background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+          color: white;
+          border: none;
+          border-radius: 16px;
+          font-weight: 700;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(var(--accent-rgb, 59, 130, 246), 0.3);
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
-          padding: 14px 28px;
-          background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
-          color: white;
-          border: none;
-          border-radius: 12px;
-          font-weight: 600;
-          font-size: 1rem;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 12px var(--accent-glow);
-          align-self: flex-end;
-          min-width: 150px;
         }
         
         .upload-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 16px var(--accent-glow);
-          background: linear-gradient(135deg, var(--accent-hover), var(--accent-color));
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 8px 25px rgba(var(--accent-rgb, 59, 130, 246), 0.4);
         }
         
         .upload-btn:disabled {
           opacity: 0.5;
+          filter: grayscale(0.5);
           cursor: not-allowed;
           box-shadow: none;
-          background: var(--border-color);
-          color: var(--text-muted);
-        }
-        
-        @media (max-width: 768px) {
-          .upload-btn {
-            width: 100%;
-          }
-          
-          .file-input-label {
-             padding: 30px 15px;
-             min-height: 150px;
-          }
         }
       `}</style>
     </div>
