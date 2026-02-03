@@ -44,6 +44,7 @@ export default function FileCard({
   const [chatAnswer, setChatAnswer] = useState("");
   const [isChatting, setIsChatting] = useState(false);
   const [activeTab, setActiveTab] = useState('doc'); // 'doc' or 'ai'
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
 
   const handleSummarize = async () => {
     if (aiSummary) return;
@@ -249,7 +250,10 @@ export default function FileCard({
                                     <div className="box-header-v2">
                                         <i className="fas fa-robot"></i> AI INSIGHTS
                                     </div>
-                                    <p>{aiSummary}</p>
+                                    <p className="truncated-text">{aiSummary}</p>
+                                    <button className="read-more-btn" onClick={() => setIsSummaryModalOpen(true)}>
+                                        Read Full Summary
+                                    </button>
                                 </div>
                             )}
 
@@ -285,13 +289,30 @@ export default function FileCard({
       </div>
 
       {/* Rename Modal */}
-      <RenameModal
+        <RenameModal
         isOpen={isRenameModalOpen}
         onClose={() => setIsRenameModalOpen(false)}
         currentName={file.filename}
         onRename={onRename}
         fileId={file._id}
       />
+
+      {isSummaryModalOpen && (
+        <div className="summary-modal-overlay" onClick={() => setIsSummaryModalOpen(false)}>
+            <div className="summary-modal-content" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3><i className="fas fa-robot"></i> Full AI Summary</h3>
+                    <button className="close-btn" onClick={() => setIsSummaryModalOpen(false)}>&times;</button>
+                </div>
+                <div className="modal-body">
+                    <p>{aiSummary}</p>
+                </div>
+                <div className="modal-footer">
+                    <button className="primary-btn" onClick={() => setIsSummaryModalOpen(false)}>Close</button>
+                </div>
+            </div>
+        </div>
+      )}
 
       <style>{`
         .file-card {
@@ -797,7 +818,30 @@ export default function FileCard({
             font-size: 0.85rem;
             color: #f1f5f9;
             margin-top: 8px;
+            display: flex;
+            flex-direction: column;
         }
+        .truncated-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+        .read-more-btn {
+            background: none;
+            border: none;
+            color: #0ea5e9;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0;
+            cursor: pointer;
+            width: fit-content;
+            text-decoration: underline;
+        }
+        .read-more-btn:hover { color: #38bdf8; }
+
         .box-header-v2 {
             font-weight: 800;
             color: #0ea5e9;
@@ -1063,6 +1107,50 @@ export default function FileCard({
             color: var(--accent-color);
             font-weight: 700;
             font-size: 0.8rem;
+        }
+
+        .summary-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .summary-modal-content {
+            background: #1e293b;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        .summary-modal-content .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-modal-content h3 { margin: 0; color: #0ea5e9; display: flex; align-items: center; gap: 10px; }
+        .summary-modal-content .close-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .summary-modal-content .modal-body { padding: 25px; color: #cbd5e1; line-height: 1.6; font-size: 0.95rem; }
+        .summary-modal-content .modal-footer { padding: 15px 25px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end; }
+        .summary-modal-content .primary-btn {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
         }
 
       `}</style>

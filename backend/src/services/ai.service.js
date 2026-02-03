@@ -22,7 +22,7 @@ export const summarizeDocument = async (buffer, mimeType) => {
         if (!text) return "Could not extract text from document.";
 
         const model = genAI.getGenerativeModel({ model: modelName });
-        const prompt = `Summarize the following document text in one concise paragraph: \n\n${text.substring(0, 10000)}`;
+        const prompt = `Summarize the following document text in one concise paragraph (MAX 50 words): \n\n${text.substring(0, 10000)}`;
         const result = await model.generateContent([prompt]);
         return result.response.text();
     } catch (error) {
@@ -45,7 +45,7 @@ export const chatWithDocument = async (buffer, mimeType, question) => {
         }
 
         const model = genAI.getGenerativeModel({ model: modelName });
-        const prompt = `Context: ${text.substring(0, 20000)}\n\nQuestion: ${question}`;
+        const prompt = `Context: ${text.substring(0, 20000)}\n\nQuestion: ${question}\n\nStrict instruction: Keep your answer helpful but very concise (under 60 words).`;
         const result = await model.generateContent([prompt]);
         return result.response.text();
     } catch (error) {
