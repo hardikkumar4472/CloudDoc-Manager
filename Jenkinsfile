@@ -2,10 +2,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = 'your-dockerhub-username' // Change this or set it in Jenkins environment
+        DOCKER_HUB_USER = 'hardikkumar4472' 
         BACKEND_IMAGE = "${DOCKER_HUB_USER}/clouddoc-backend"
         FRONTEND_IMAGE = "${DOCKER_HUB_USER}/clouddoc-frontend"
-        GIT_REPO_URL = 'https://github.com/your-username/CloudDoc-Manager.git' // Change this
+        GIT_REPO_URL = 'https://github.com/hardikkumar4472/CloudDoc-Manager.git'
     }
 
     stages {
