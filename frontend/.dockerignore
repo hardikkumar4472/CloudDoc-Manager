@@ -1,0 +1,5 @@
+node_modules
+dist
+# .env removed to allow build-time variables
+.git
+.gitignore
