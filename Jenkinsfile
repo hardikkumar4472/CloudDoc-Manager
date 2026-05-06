@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = 'hardikkumar4472' 
+        DOCKER_HUB_USER = 'hardik010190' 
         BACKEND_IMAGE = "${DOCKER_HUB_USER}/clouddoc-backend"
         FRONTEND_IMAGE = "${DOCKER_HUB_USER}/clouddoc-frontend"
         GIT_REPO_URL = 'https://github.com/hardikkumar4472/CloudDoc-Manager.git'
@@ -80,7 +80,7 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            deleteDir()
         }
         success {
             echo 'Pipeline completed successfully!'
