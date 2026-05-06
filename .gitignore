@@ -38,4 +38,5 @@ frontend/.env
 .vercel
 
 # Supabase
-supabase/functions/*/deno.lock
+# Kubernetes Secrets
+k8s/backend-secret.yaml

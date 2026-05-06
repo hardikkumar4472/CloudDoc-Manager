@@ -80,6 +80,30 @@ kubectl port-forward service/backend-service 30005:5000
 
 ---
 
+## 🚀 Phase 3: Testing with Jenkins (CI/CD Pipeline)
+
+This setup tests the automated build and deployment process.
+
+### 1. Start Jenkins
+Run Jenkins locally with Docker-in-Docker support:
+```powershell
+docker-compose -f docker-compose.jenkins.yml up --build -d
+```
+Access Jenkins at [http://localhost:9090](http://localhost:9090).
+
+### 2. Configure Jenkins
+Follow the detailed steps in [jenkins_setup.md](./jenkins_setup.md) to:
+- Unlock Jenkins and install required plugins.
+- Configure `github-creds`, `docker-hub-creds`, and `kubeconfig`.
+- Create a **Pipeline** job pointing to your GitHub repository.
+
+### 3. Run and Verify
+- **Manual Trigger**: Click `Build Now` in Jenkins.
+- **Webhook Trigger**: Push a change to GitHub and watch Jenkins start the build automatically.
+- **Deployment**: Verify that Jenkins pushes images to Docker Hub and successfully updates your Kubernetes pods.
+
+---
+
 ## 🛠️ Common Fixes
 
 ### "EOF" or "Connection Refused" with kubectl
