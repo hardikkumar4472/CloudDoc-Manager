@@ -23,7 +23,10 @@ Access Jenkins at `http://localhost:9090`.
     -   Go to `Manage Jenkins` -> `Credentials` -> `System` -> `Global credentials`.
     -   Add `github-creds`: Username with password (PAT) or SSH key for your GitHub repository.
     -   Add `docker-hub-creds`: Username and password for your Docker Hub account.
-    -   Add `kubeconfig`: Secret file containing your `~/.kube/config`.
+    -   Add `kubeconfig`: 
+        1. Select **Secret file** as the Kind.
+        2. Upload your `~/.kube/config` file.
+        3. Set the ID to `kubeconfig` (must match Jenkinsfile).
 
 ## 3. Create a Pipeline Job
 

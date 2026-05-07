@@ -69,9 +69,11 @@ pipeline {
                 script {
                     // Requires 'kubeconfig' to be defined in Jenkins as a secret file
                     withKubeConfig([credentialsId: 'kubeconfig']) {
-                        sh 'kubectl apply -f k8s/'
+                        sh 'kubectl apply -k k8s/'
                         sh "kubectl set image deployment/backend backend=${env.BACKEND_IMAGE}:${env.BUILD_NUMBER}"
                         sh "kubectl set image deployment/frontend frontend=${env.FRONTEND_IMAGE}:${env.BUILD_NUMBER}"
+                        sh "kubectl rollout status deployment/backend"
+                        sh "kubectl rollout status deployment/frontend"
                     }
                 }
             }
