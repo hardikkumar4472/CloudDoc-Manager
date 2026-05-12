@@ -1,119 +1,172 @@
-# CloudDoc-Manager Testing Guide
+# CloudDoc-Manager: Comprehensive Test Plan
 
-This guide provides step-by-step instructions for testing the application in both Docker Compose and Kubernetes (Minikube).
+This document provides a systematic approach to testing the entire CloudDoc-Manager ecosystem, including Frontend, Backend, Infrastructure, DevOps, and Monitoring.
 
----
-
-## 🐳 Phase 1: Testing with Docker Compose
-
-This is the standard local development setup.
-
-1.  **Clean up existing state:**
-    ```powershell
-    docker compose down -v
-    ```
-2.  **Build and run:**
-    ```powershell
-    docker compose up --build
-    ```
-3.  **Access the application:**
-    Open [http://localhost:3000](http://localhost:3000) in your browser.
-4.  **Verify Registration/Login:**
-    - Go to the Sign Up page.
-    - Register a new user.
-    - Verify that any errors (like "User already exists") appear clearly in the toast notifications.
+## Prerequisites
+- **Local Environment**: Node.js installed, Docker Desktop running.
+- **Cloud Environment**: AWS CLI configured, Terraform installed.
+- **Kubernetes**: Minikube/Cluster running, `KUBECONFIG` set to `portable-kubeconfig`.
+- **Secrets**: `.env` files populated in `backend/` and `frontend/`.
 
 ---
 
-## ☸️ Phase 2: Testing with Kubernetes (Minikube)
+## Module 1: User Authentication & Security
+| Test Case | Action | Expected Result |
+| :--- | :--- | :--- |
+| **1.1 Register** | Register a new user via the UI. | User created in MongoDB, redirected to login. |
+| **1.2 Login** | Log in with valid credentials. | JWT token stored in `localStorage`, redirected to Dashboard. |
+| **1.3 JWT Protection** | Access `/api/docs` without a token. | Status `401 Unauthorized`. |
+| **1.4 Document Vault** | Toggle "Move to Vault" on a document. | Document disappears from main list, appears in Vault section. |
 
-This setup tests the container orchestration layer.
+## Module 2: Document Management & AI
+| Test Case | Action | Expected Result |
+| :--- | :--- | :--- |
+| **2.1 File Upload** | Upload a PDF or Image. | File saved to Supabase, metadata saved to MongoDB. |
+| **2.2 AI OCR** | Upload an image with text. | `ocrText` field populated in document metadata. |
+| **2.3 AI Summary** | Upload a large PDF. | `summary` field populated with a concise overview. |
+| **2.4 Auto-Tagging** | Upload any document. | `tags` array contains relevant keywords (e.g., "Invoice", "Legal"). |
+| **2.5 Full-Text Search** | Search for a keyword inside a document. | Document returned based on `textContent` or `ocrText`. |
 
-### 1. Initial Setup (If not done)
-Ensure Minikube is running:
-```powershell
-minikube start
-```
+## Module 3: Advanced File Transformations
+| Test Case | Action | Expected Result |
+| :--- | :--- | :--- |
+| **3.1 PDF Merge** | Select two PDFs and click "Merge". | A new merged PDF is downloaded. |
+| **3.2 PDF Split** | Specify page range (e.g., "1-2") for a PDF. | A new PDF containing only those pages is downloaded. |
+| **3.3 Image Resize** | Download an image with width/height params. | Image downloaded with requested dimensions. |
+| **3.4 PDF Compression** | Trigger compression on a large PDF. | PDF downloaded with reduced file size. |
+| **3.5 Watermarking** | Add text watermark to a PDF/Image. | Downloaded file has the watermark overlay. |
 
-### 2. Build and Load Images
-Kubernetes needs access to your Docker images. Since Minikube has its own registry, you must load them manually after building.
+## Module 4: Infrastructure & Cloud Routing
+| Test Case | Action | Expected Result |
+| :--- | :--- | :--- |
+| **4.1 CloudFront Frontend** | Access the root CloudFront URL. | Serves the React application from S3. |
+| **4.2 CloudFront API** | Access `<CF_URL>/api/auth/health`. | Traffic routed to EC2/K8s Backend. |
+| **4.3 S3 Hosting** | Check S3 bucket permissions. | Public read restricted; accessible only via CloudFront OAI/OAC. |
+| **4.4 HTTPS Enforce** | Access via `http://`. | Automatically redirected to `https://`. |
 
-**Build Backend:**
-```powershell
-docker build -t clouddoc-backend:latest ./backend
-```
+## Module 5: DevOps & Orchestration
+| Test Case | Action | Expected Result |
+| :--- | :--- | :--- |
+| **5.1 Jenkins Pipeline** | Push code to `main` branch. | Jenkins triggers: Infra -> Build -> Push -> Deploy. |
+| **5.2 K8s Deployment** | Run `kubectl get pods`. | `backend` and `frontend` pods are `Running`. |
+| **5.3 K8s Secret Sync** | Change a secret in Jenkins & redeploy. | New secret value reflected in Pod environment. |
+| **5.4 Self-Healing** | Manually delete a backend pod. | Kubernetes automatically recreates the pod. |
 
-**Build Frontend:**
-*Note: We build the frontend with the Kubernetes backend NodePort URL.*
-```powershell
-docker build -t clouddoc-frontend:latest --build-arg VITE_API_URL=http://localhost:30005 ./frontend
-```
-
-**Load into Minikube:**
-```powershell
-minikube image load clouddoc-backend:latest
-minikube image load clouddoc-frontend:latest
-```
-
-### 3. Deploy Resources
-Deploy all manifests (Secrets, ConfigMaps, Deployments, and Services):
-```powershell
-kubectl apply -k k8s/
-```
-
-### 4. Verify and Access
-Check if pods are running:
-```powershell
-kubectl get pods
-```
-
-Access the frontend via Minikube:
-```powershell
-minikube service frontend-service
-```
-
-### 5. Troubleshooting Connectivity
-If the frontend cannot communicate with the backend from your host browser, run this port-forwarding command in a separate terminal:
-```powershell
-kubectl port-forward service/backend-service 30005:5000
-```
+## Module 6: Monitoring & Governance
+| Test Case | Action | Expected Result |
+| :--- | :--- | :--- |
+| **6.1 Metrics Endpoint** | `curl <BACKEND_URL>/metrics`. | Prometheus-formatted metrics are returned. |
+| **6.2 Grafana Dashboard** | Access Grafana on port `30007`. | "CloudDoc-Manager Overview" dashboard shows live data. |
+| **6.3 Expiry Logic** | Set `expiresAt` to 1 minute ago. | Document is deleted from DB and Storage within 24h (or on startup). |
+| **6.4 Trash Purge** | Move doc to trash, set `trashedAt` to 31 days ago. | Document is permanently deleted by the Cron job. |
 
 ---
 
-## 🚀 Phase 3: Testing with Jenkins (CI/CD Pipeline)
+## Technical Implementation & Tool Testing
 
-This setup tests the automated build and deployment process.
+### 1. Docker Implementation
+**How it is Implemented:**
+- **Backend**: A `Dockerfile` in `backend/` uses `node:18-alpine` as a base, installs dependencies, and runs the Express server.
+- **Frontend**: A `Dockerfile` in `frontend/` handles the multi-stage build: building the React app with Node and potentially serving it.
+- **Orchestration**: `docker-compose.yml` in the root allows running both services locally.
+- **Networking**: A custom bridge network (`clouddoc-network`) enables services to communicate via container names (e.g., `frontend` reaching `http://backend:5000`).
+- **Volumes**: A named volume (`clouddoc-logs`) is mounted to `/app/logs` in the backend for persistent log storage.
 
-### 1. Start Jenkins
-Run Jenkins locally with Docker-in-Docker support:
-```powershell
-docker-compose -f docker-compose.jenkins.yml up --build -d
-```
-Access Jenkins at [http://localhost:9090](http://localhost:9090).
-
-### 2. Configure Jenkins
-Follow the detailed steps in [jenkins_setup.md](./jenkins_setup.md) to:
-- Unlock Jenkins and install required plugins.
-- Configure `github-creds`, `docker-hub-creds`, and `kubeconfig`.
-- Create a **Pipeline** job pointing to your GitHub repository.
-
-### 3. Run and Verify
-- **Manual Trigger**: Click `Build Now` in Jenkins.
-- **Webhook Trigger**: Push a change to GitHub and watch Jenkins start the build automatically.
-- **Deployment**: Verify that Jenkins pushes images to Docker Hub and successfully updates your Kubernetes pods.
+**How to Test it:**
+1. **Build Locally**: 
+   ```bash
+   docker build -t test-backend ./backend
+   ```
+2. **Run Container**:
+   ```bash
+   docker run -p 5000:5000 --env-file ./backend/.env test-backend
+   ```
+3. **Verify Connectivity (Network)**:
+   - Exec into the frontend container and ping the backend:
+     ```bash
+     docker exec -it <frontend_container_id> ping backend
+     ```
+4. **Verify Persistence (Volume)**:
+   - Check if the logs volume is created:
+     ```bash
+     docker volume inspect clouddoc_clouddoc-logs
+     ```
+   - Verify logs are being written inside the container:
+     ```bash
+     docker exec -it <backend_container_id> ls /app/logs
+     ```
 
 ---
 
-## 🛠️ Common Fixes
+### 2. Kubernetes Implementation
+**How it is Implemented:**
+- **Manifests**: Located in the `k8s/` directory.
+- **Resources**: Uses `Deployment` for scaling/self-healing, `Service` (NodePort) for internal/external access, `ConfigMap` for non-sensitive config, and `Secret` for credentials.
+- **Orchestration**: Managed via `kubectl` and the `KUBECONFIG` file (`portable-kubeconfig`).
 
-### "EOF" or "Connection Refused" with kubectl
-If `kubectl` commands fail with connection errors:
-1. Ensure Minikube is started (`minikube start`).
-2. If it persists, restart it: `minikube delete` followed by `minikube start`.
+**How to Test it:**
+1. **Deploy**:
+   ```bash
+   kubectl apply -k k8s/
+   ```
+2. **Check Status**:
+   ```bash
+   kubectl get pods,svc,secrets
+   ```
+3. **Test Self-Healing**: Delete a pod and watch K8s recreate it:
+   ```bash
+   kubectl delete pod <backend-pod-name>
+   kubectl get pods -w
+   ```
 
-### CORS Issues
-The backend is configured to allow:
-- `http://localhost:3000` (Docker)
-- `http://localhost:5173` / `5174` (Vite Dev)
-- `http://localhost:30000` (K8s Frontend)
-- `https://clouddoc-manager-interface.onrender.com` (Production)
+---
+
+### 3. Terraform & AWS Implementation
+**How it is Implemented:**
+- **Modular IaC**: Terraform files are in `terraform/` (e.g., `aws_vpc.tf`, `aws_s3_frontend.tf`).
+- **CloudFront**: Acts as the single entry point, routing `/api/*` to EC2 and everything else to S3.
+- **S3/ECR**: S3 hosts static assets; ECR stores Docker images.
+- **EC2**: Runs the backend service in a cost-optimized `t3.micro` instance.
+
+**How to Test it:**
+1. **Validate Config**:
+   ```bash
+   cd terraform
+   terraform validate
+   ```
+2. **Dry Run**:
+   ```bash
+   terraform plan
+   ```
+3. **AWS Verification**: After `terraform apply`, log in to AWS Console and verify resources exist.
+
+---
+
+### 4. Jenkins Implementation
+**How it is Implemented:**
+- **Pipeline as Code**: Defined in `Jenkinsfile` at the root.
+- **Stages**: `Checkout`, `Infrastructure`, `Build & Push`, `Deploy`.
+- **Secrets**: Integrated with Jenkins Credentials Provider for AWS keys and Database URIs.
+
+**How to Test it:**
+1. **Manual Trigger**: Open Jenkins UI and click "Build Now" for the job.
+2. **Stage View**: Monitor the pipeline progress in the UI.
+3. **Console Output**: Inspect logs of the "Deploy" stage to ensure success.
+
+---
+
+### 5. Prometheus & Grafana Implementation
+**How it is Implemented:**
+- **Instrumentation**: Backend uses `prom-client` to expose metrics on `/metrics`.
+- **Infrastructure**: `monitoring.tf` uses the `kube-prometheus-stack` Helm chart.
+- **Visualization**: Grafana is configured with a sidecar to automatically load `monitoring/dashboard.json`.
+
+**How to Test it:**
+1. **Metrics Check**:
+   ```bash
+   curl http://localhost:5000/metrics
+   ```
+2. **Access Grafana**: 
+   - Open `http://localhost:30007` in your browser.
+   - Login (Default: admin/prom-operator).
+3. **Verify Dashboard**: Search for the "CloudDoc-Manager Overview" dashboard.

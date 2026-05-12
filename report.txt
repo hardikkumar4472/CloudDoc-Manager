@@ -1,0 +1,140 @@
+All-in-One Cloud Document Management System
+
+1 Project Description
+CloudDoc-Manager is a cloud-native document management system designed to automate and streamline the storage, organization, and retrieval of digital documents. The platform enables users to securely upload, categorize, and manage files while ensuring high availability, performance, and cost-efficiency. The system follows a modern web architecture where the frontend and backend are decoupled and deployed using highly scalable AWS services. To minimize operational costs, the application leverages the AWS Free Tier, utilizing S3 for static hosting, CloudFront for content delivery, and a cost-effective EC2 instance for backend processing. The project incorporates advanced DevOps practices, including containerization with Docker, automated CI/CD pipelines via Jenkins, and Infrastructure as Code (IaC) using Terraform to ensure consistent and reproducible deployments.
+
+2 Project Scope and Objectives
+The primary objectives of this project are:
+1. To design and develop a scalable document management system using React and Node.js.
+2. To implement a cost-optimized cloud architecture using the AWS Free Tier.
+3. To utilize S3 and CloudFront for high-performance frontend delivery.
+4. To apply DevOps practices such as automated build and deployment via Jenkins.
+5. To implement Infrastructure as Code (IaC) using Terraform for automated resource provisioning.
+6. To ensure portability and environment consistency through Docker containerization.
+7. To provide secure and reliable data storage using MongoDB Atlas.
+
+3 Tech Stack
+3.1 Frontend
+The frontend layer serves as the primary user interface, designed to be lightweight, highly responsive, and modular. It leverages modern React patterns and Vite's fast build system to provide a seamless document management experience with rapid loading times and intuitive navigation.
+• Developed using Vite (React) with JavaScript/TypeScript.
+• Served as static assets via Amazon S3.
+• Optimized for global performance using the Amazon CloudFront CDN.
+
+3.2 Backend
+The backend serves as the core processing engine of the system, managing complex business logic, secure file operations, and high-performance API requests. It is designed for scalability and security, ensuring robust data validation and efficient communication between the client and the persistent storage layers.
+• Built using Node.js and Express.js (RESTful API architecture).
+• Handles authentication (JWT), document metadata, and file upload logic.
+• Deployed as a Docker container on an AWS EC2 (t3.micro) instance.
+
+3.3 Database
+The database layer is responsible for the persistent and secure storage of application data, including critical document metadata and user credentials. It is architected for high availability and low-latency retrieval, ensuring that data integrity is maintained across all document management and search operations.
+• MongoDB Atlas (Cloud-based NoSQL database).
+• Utilizes Mongoose for schema management and efficient querying.
+• Hosted externally to AWS to leverage the generous free tier.
+
+3.4 Containerization and Orchestration
+3.4.1 Docker
+Docker is utilized to package the backend application and its dependencies into a single, portable container image. This ensures that the execution environment remains consistent across local development, testing, and production, effectively eliminating environment-specific bugs and simplifying deployment.
+• Dockerfiles for backend service.
+• Environment portability and easy scaling.
+
+3.4.2 Kubernetes
+Kubernetes is a container orchestration platform used for automating the deployment, scaling, and management of containerized applications. It provides advanced features like self-healing, horizontal scaling, and service discovery, ensuring that the document management microservices remain highly available and resilient.
+• Automated deployment and self-healing pods.
+• Service load balancing and inter-pod communication.
+• ConfigMaps and Secrets for secure configuration management.
+
+3.5 Cloud Platform (AWS)
+The application leverages AWS for its robust and scalable infrastructure:
+• Amazon S3: Hosts the frontend static files.
+• Amazon CloudFront: Acts as the entry point, providing SSL and routing traffic between the S3 frontend and EC2 backend.
+• Amazon EC2: Runs the backend API service in a cost-effective manner.
+• Amazon ECR: Stores backend Docker images.
+
+3.6 Infrastructure as Code
+Infrastructure as Code (IaC) enables automated and consistent provisioning of cloud resources by replacing manual configuration with declarative definitions. In this project, Terraform is used to define the entire AWS ecosystem, ensuring that the environment can be reproduced accurately and scaled with minimal effort.
+• Defines EC2 instances, VPC networking, and S3 storage.
+• Manages CloudFront distributions and ECR repositories.
+• Ensures consistency across development and production environments.
+
+3.7 CI/CD
+Continuous Integration and Continuous Deployment streamline the development lifecycle by automating the build, test, and deployment processes. This reduces manual intervention, accelerates delivery cycles, and ensures that every code change is validated and deployed consistently.
+• Jenkins-based automated pipelines.
+• Automated Docker builds and ECR image management.
+• Real-time deployment to S3 and EC2 via secure SSH channels.
+
+3.8 Monitoring and Observability
+3.8.1 Prometheus
+Prometheus is an open-source monitoring and alerting toolkit designed to collect and store time-series metrics from the application's services. It provides deep visibility into the system's performance, resource consumption, and overall health through real-time data scraping and analysis.
+• Real-time metrics collection from the Node.js backend and EC2 instance.
+• Resource utilization tracking (CPU, Memory, Disk I/O).
+• Performance monitoring for API request latency and error rates.
+
+3.8.2 Grafana
+Grafana is a leading visualization and analytics platform that converts raw monitoring data into interactive and insightful dashboards. It enables at-a-glance monitoring of system reliability and allows for proactive identification of performance trends or potential failures.
+• Intuitive, dashboard-based visualization of Prometheus metrics.
+• Real-time alerting system for critical performance thresholds.
+• Seamless integration with multiple cloud-native data sources.
+
+4 System Architecture
+4.1 Architecture Overview
+The application is split into two main components:
+• Static Frontend: Hosted on S3 and delivered via CloudFront.
+• API Backend: A containerized Node.js app running on EC2.
+Access is managed through a single CloudFront URL, which routes requests to either the frontend or the backend based on the URL path (/api/* goes to EC2, everything else goes to S3).
+
+4.2 Request Handling Workflow
+1. Client Request: User accesses the CloudFront URL via a browser.
+2. Routing: CloudFront determines the destination:
+   - Path /api/*: Traffic is routed to the EC2 backend instance.
+   - All other paths: Traffic is served from the S3 frontend bucket.
+3. Execution: 
+   - Frontend: Assets are rendered in the user's browser.
+   - Backend: Node.js processes the request, interacts with MongoDB Atlas, and returns a JSON response.
+4. Response: The response flows back through CloudFront to the user over a secure HTTPS connection.
+
+4.3 Key Architectural Features
+The system architecture is designed to prioritize cost-efficiency, security, and high performance by leveraging modern cloud-native patterns.
+• Single Entry Point: CloudFront serves as a unified gateway for both frontend and backend, simplifying SSL management and routing.
+• Decoupled Architecture: Independent deployment of React and Node.js allows for flexible scaling and easier troubleshooting.
+• Edge Caching: Static assets are cached globally via CloudFront, ensuring minimal latency and faster load times for end-users.
+• Secure Communication: Enforces HTTPS across the entire application, protecting user data during transit.
+• Automated Scalability: Terraform-managed infrastructure allows for rapid environment reproduction and resource scaling.
+• Cost Optimization: Strategic use of AWS Free Tier services (S3, CloudFront, EC2) keeps operational overhead at zero.
+
+4.3.1 Local System Architecture Diagram
+The local system architecture encompasses the developer environment and the tooling used for building, testing, and managing the application before deployment.
+• IDE & Version Control: Developers use VS Code and local Git repositories to manage source code changes and branching strategies.
+• Local Runtime: Node.js and npm are used to run the Vite dev server (frontend) and the Express server (backend) on localhost for real-time testing.
+• Containerization: Docker Desktop allows developers to run the entire stack locally in containers, ensuring that the application behaves identically to the production environment.
+• Infrastructure CLI: Terraform CLI is used locally to validate and plan infrastructure changes before applying them to the AWS cloud.
+• Environment Configuration: Secure .env files are managed locally to provide necessary secrets and API keys for the development environment.
+• Local Networking: Frontend components communicate with the backend API via cross-origin requests handled through local port mapping (e.g., 5173 to 5000).
+
+4.3.2 Cloud System Architecture Diagram
+The cloud architecture represents the live production environment hosted on AWS, optimized for security, performance, and cost.
+• Traffic Flow: Client -> DNS -> CloudFront (Edge) -> S3 (Static) or EC2 (API).
+• Compute Layer: Backend Docker containers running on a t3.micro EC2 instance.
+• Storage Layer: Static assets in S3 and persistent document metadata in MongoDB Atlas.
+• Networking: VPC with public subnets and Security Groups to restrict access to authorized ports only.
+
+4.4 Data Flow Diagrams (DFD)
+4.4.1 DFD Level 0 (Enhanced Context Diagram)
+The Context Diagram illustrates the global data exchange between the User, the core system, and external third-party services (AI Engine, Email Distribution).
+• User Inputs: Binary files, multi-version updates, AI prompts, and granular document editing commands (Merge/Crop).
+• System Outputs: High-fidelity processed documents, AI-driven insights (OCR/Summaries), secure sharing tokens, and comprehensive audit logs.
+• External Flows: Document streams to Gemini AI for analysis and email dispatch via SMTP providers.
+
+4.4.2 DFD Level 1 (Advanced Functional Decomposition)
+The system is architected around six core functional blocks that manage the complex document lifecycle:
+• 1.0 Security & Privacy: Handles multi-factor authentication (JWT), secure Vault encryption, and automated file-level expiry policies.
+• 2.0 Ingestion & Versioning: Manages the document revision history, allowing users to track changes, upload new versions, and restore to previous snapshots.
+• 3.0 Document Transformation: A high-performance engine for server-side PDF editing (Merge, Split, Watermark) and image manipulation (Crop, Resize, Format Conversion).
+• 4.0 Intelligent Analysis: Integrates state-of-the-art AI for Optical Character Recognition (OCR), semantic summarization, and interactive document-based chat.
+• 5.0 Distribution & Access: Facilitates global document sharing through time-limited link generation and direct SMTP email integration.
+• 6.0 Governance & Lifecycle: Ensures system integrity through a Recycle Bin (Trash management), automated storage statistics, and immutable audit logs for compliance tracking.
+
+5 Conclusion
+CloudDoc-Manager stands as a comprehensive, "All-in-One" solution for modern document management, successfully bridging the gap between high-end enterprise features and cost-effective cloud architecture. By strategically leveraging the AWS Free Tier—specifically S3 for durable storage, CloudFront for global delivery, and EC2 for robust backend processing—the platform achieves production-ready performance with near-zero operational overhead.
+
+The integration of advanced AI capabilities for document intelligence and the inclusion of powerful server-side transformation tools elevate the system beyond a simple storage repository into a dynamic processing hub. Furthermore, the commitment to DevOps excellence through Terraform for Infrastructure as Code and Jenkins for automated CI/CD ensures that the entire system is scalable, reproducible, and professionally maintained. Ultimately, CloudDoc-Manager demonstrates that with thoughtful architectural design, it is possible to deliver a secure, intelligent, and highly available cloud-native application without the burden of high infrastructure costs.

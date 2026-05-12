@@ -6,14 +6,27 @@ services:
     env_file:
       - ./backend/.env
     restart: always
+    networks:
+      - clouddoc-network
+    volumes:
+      - clouddoc-logs:/app/logs
 
   frontend:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=http://localhost:5000
+        - VITE_API_URL=http://backend:5000 
     ports:
       - "3000:3000"
     depends_on:
       - backend
     restart: always
+    networks:
+      - clouddoc-network
+
+networks:
+  clouddoc-network:
+    driver: bridge
+
+volumes:
+  clouddoc-logs:
